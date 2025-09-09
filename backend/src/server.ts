@@ -23,7 +23,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`, { 
     ip: req.ip,
     userAgent: req.get('user-agent')
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -47,7 +47,7 @@ app.use('/api/reminders', reminderRoutes);
 
 app.use(errorHandler);
 
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
