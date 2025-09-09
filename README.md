@@ -6,6 +6,25 @@ YouTubeの視聴体験を「受動的な消費」から「能動的な学習」�
 
 MindfulReplayは、YouTube動画から得た知識を実際の行動に結びつけるための学習管理プラットフォームです。動画の保存、タイムスタンプ付きメモ、タスク管理、スペースドリピティション型リマインダーを通じて、効果的な学習サイクルを構築します。
 
+## 現在の開発状況 (2025年9月)
+
+### ✅ 完了済み
+- バックエンドAPI実装（認証、CRUD操作）
+- フロントエンド基盤（React Native + TypeScript）
+- UIコンポーネント（ログイン、サインアップ、動画リスト）
+- JWT認証システム
+- API サービス層
+
+### 🚧 作業中
+- PostgreSQLデータベース接続設定
+- Expo実行環境の調整
+
+### 📋 今後の実装予定
+- メモ・タスク管理UI
+- YouTube API統合
+- プッシュ通知（Firebase）
+- E2Eテスト
+
 ## 主な機能
 
 - 📹 **動画管理**: YouTube動画の保存とメタデータ自動取得
@@ -51,8 +70,8 @@ MindfulReplayは、YouTube動画から得た知識を実際の行動に結びつ
 
 1. リポジトリのクローン
 ```bash
-git clone https://github.com/yourusername/mindful-replay.git
-cd mindful-replay
+git clone https://github.com/M-Ito-7310/MindfulReplay.git
+cd MindfulReplay
 ```
 
 2. 依存関係のインストール
@@ -74,14 +93,30 @@ npm install
 バックエンドの環境変数:
 ```bash
 cd backend
-cp .env.example .env
-# .envファイルを編集して必要な情報を設定
+# .envファイルを作成し、以下の内容を設定
 ```
 
-主な設定項目:
-- `DATABASE_URL`: PostgreSQL接続文字列
-- `JWT_SECRET`: JWT署名用の秘密鍵
-- `YOUTUBE_API_KEY`: YouTube Data API v3のAPIキー
+.env ファイルの例:
+```env
+# Server Configuration
+PORT=4000
+NODE_ENV=development
+
+# Database Configuration
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/mindful_replay
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=mindful_replay
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=your-super-secret-refresh-key
+JWT_REFRESH_EXPIRES_IN=30d
+
+# YouTube API
+YOUTUBE_API_KEY=your-youtube-data-api-v3-key
+```
 
 4. データベースのセットアップ
 
@@ -102,13 +137,30 @@ psql -U postgres -d mindful_replay -f schema.sql
 ```bash
 cd backend
 npm run dev
+# サーバーが http://localhost:4000 で起動します
 ```
 
 フロントエンド:
 ```bash
 cd frontend
-npm start
+npx expo start
+# Expo Developer Tools が起動します
+# - Web版: w キーを押す
+# - Android: a キーを押す（エミュレータ要）
+# - iOS: i キーを押す（Mac + Xcode要）
 ```
+
+## 動作確認
+
+### APIヘルスチェック
+```bash
+curl http://localhost:4000/health
+# レスポンス: {"status":"healthy","timestamp":"...","environment":"development"}
+```
+
+### 注意事項
+- PostgreSQLの接続設定が必要です（.envファイルのDB_PASSWORD）
+- フロントエンドのExpo実行には追加の依存関係インストールが必要な場合があります
 
 ## 開発コマンド
 
@@ -140,18 +192,19 @@ npm run db:seed  # テストデータ投入
 ## プロジェクト構造
 
 ```
-mindful-replay/
+MindfulReplay/
 ├── frontend/           # React Native (Expo) アプリ
 │   ├── src/
 │   │   ├── components/ # 共通UIコンポーネント
+│   │   │   └── common/ # Button, Input等の基本コンポーネント
 │   │   ├── screens/    # 画面コンポーネント
-│   │   ├── navigation/ # ナビゲーション設定
+│   │   │   ├── auth/   # ログイン、サインアップ画面
+│   │   │   └── video/  # 動画リスト、プレーヤー画面
 │   │   ├── services/   # API通信
-│   │   ├── hooks/      # カスタムフック
-│   │   ├── store/      # 状態管理 (Zustand)
-│   │   ├── utils/      # ユーティリティ関数
+│   │   ├── constants/  # 定数定義（API設定、テーマ）
 │   │   └── types/      # TypeScript型定義
-│   └── assets/         # 画像、フォントなど
+│   ├── App.tsx         # アプリケーションエントリーポイント
+│   └── package.json    # フロントエンド依存関係
 │
 ├── backend/            # Node.js/Express API
 │   ├── src/
@@ -160,21 +213,25 @@ mindful-replay/
 │   │   ├── services/   # ビジネスロジック
 │   │   ├── models/     # データモデル
 │   │   ├── middleware/ # Express ミドルウェア
-│   │   ├── database/   # DB接続、マイグレーション
+│   │   ├── database/   # DB接続設定
 │   │   ├── utils/      # ユーティリティ関数
 │   │   └── types/      # TypeScript型定義
-│   └── dist/           # ビルド済みファイル
+│   └── .env            # 環境変数設定
 │
 ├── database/           # データベース関連
-│   └── schema.sql      # PostgreSQLスキーマ定義
+│   ├── schema.sql      # PostgreSQLスキーマ定義
+│   └── postgres_setup_guide.md # DB設定ガイド
 │
-├── docs/               # プロジェクトドキュメント
+├── docs/               # プロジェクトドキュメント（日本語）
 │   ├── personas.md     # ユーザーペルソナ
 │   ├── architecture.md # システム設計
 │   ├── ideas.md        # アイデア・機能案
 │   └── roadmap.md      # 開発ロードマップ
 │
-└── scripts/            # 開発・デプロイ用スクリプト
+└── claudedocs/         # 開発進捗ドキュメント
+    ├── PROJECT_STATUS.md    # プロジェクトステータス
+    ├── API_TEST_REPORT.md   # APIテストレポート
+    └── API_ENDPOINTS_SUMMARY.md # APIエンドポイント一覧
 ```
 
 ## API エンドポイント
@@ -228,14 +285,14 @@ npm run test:e2e
 
 ## デプロイ
 
-### Google Cloud Platform へのデプロイ
+### デプロイ準備状況
 
-1. GCPプロジェクトの作成
-2. Cloud SQL インスタンスの作成
-3. Cloud Run サービスのデプロイ
-4. Firebase Hosting の設定
+現在、開発環境での動作確認を進めています。本番環境へのデプロイは以下の手順で実施予定：
 
-詳細は [deployment.md](docs/deployment.md) を参照してください。
+1. PostgreSQLデータベースの本番環境設定
+2. 環境変数の本番用設定
+3. ビルドとデプロイの自動化（GitHub Actions）
+4. ホスティングサービスの選定（Vercel、Netlify、Google Cloud Platform等）
 
 ## コントリビューション
 
@@ -249,7 +306,7 @@ npm run test:e2e
 
 ## ライセンス
 
-[MIT](LICENSE)
+MIT License - 詳細は後日追加予定
 
 ## 開発チーム
 
@@ -259,5 +316,4 @@ npm run test:e2e
 
 ## お問い合わせ
 
-- GitHub Issues: [https://github.com/yourusername/mindful-replay/issues](https://github.com/yourusername/mindful-replay/issues)
-- Email: contact@mindfulreplay.com
+- GitHub Issues: [https://github.com/M-Ito-7310/MindfulReplay/issues](https://github.com/M-Ito-7310/MindfulReplay/issues)
