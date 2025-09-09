@@ -1,28 +1,20 @@
-import { UserModel } from '../models/User';
+import { getUserRepository } from '../database/repositories';
+import { User } from '../database/repositories/userRepository';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateTokens, TokenPair } from '../utils/jwt';
-import { User } from '../types/database';
 
 export class AuthService {
   static async register(userData: {
     email: string;
-    username: string;
+    name: string;
     password: string;
-    displayName?: string;
   }): Promise<{ user: Omit<User, 'password_hash'>; tokens: TokenPair }> {
+    const userRepo = getUserRepository();
+    
     // Check if email already exists
-    const existingUser = await UserModel.findByEmail(userData.email);
+    const existingUser = await userRepo.findByEmail(userData.email);
     if (existingUser) {
       const error = new Error('Email already registered') as any;
-      error.status = 409;
-      error.code = 'DUPLICATE_RESOURCE';
-      throw error;
-    }
-
-    // Check if username already exists
-    const existingUsername = await UserModel.findByUsername(userData.username);
-    if (existingUsername) {
-      const error = new Error('Username already taken') as any;
       error.status = 409;
       error.code = 'DUPLICATE_RESOURCE';
       throw error;
@@ -32,11 +24,10 @@ export class AuthService {
     const password_hash = await hashPassword(userData.password);
 
     // Create user
-    const user = await UserModel.create({
+    const user = await userRepo.create({
       email: userData.email,
-      username: userData.username,
-      password_hash,
-      display_name: userData.displayName
+      name: userData.name,
+      password_hash
     });
 
     // Generate tokens
@@ -52,8 +43,10 @@ export class AuthService {
   }
 
   static async login(email: string, password: string): Promise<{ user: Omit<User, 'password_hash'>; tokens: TokenPair }> {
+    const userRepo = getUserRepository();
+    
     // Find user by email
-    const user = await UserModel.findByEmail(email);
+    const user = await userRepo.findByEmail(email);
     if (!user) {
       const error = new Error('Invalid email or password') as any;
       error.status = 401;
@@ -70,8 +63,8 @@ export class AuthService {
       throw error;
     }
 
-    // Update last login
-    await UserModel.updateLastLogin(user.id);
+    // Update last login (simplified for mock)
+    // await userRepo.update(user.id, { last_login: new Date() });
 
     // Generate tokens
     const tokens = generateTokens(user);
@@ -90,8 +83,10 @@ export class AuthService {
       const { verifyRefreshToken } = await import('../utils/jwt');
       const payload = verifyRefreshToken(refreshToken);
 
+      const userRepo = getUserRepository();
+      
       // Get user to ensure they still exist and are active
-      const user = await UserModel.findById(payload.userId);
+      const user = await userRepo.findById(payload.userId);
       if (!user) {
         const error = new Error('User not found') as any;
         error.status = 401;
@@ -110,7 +105,8 @@ export class AuthService {
   }
 
   static async getUserProfile(userId: string): Promise<Omit<User, 'password_hash'> | null> {
-    const user = await UserModel.findById(userId);
+    const userRepo = getUserRepository();
+    const user = await userRepo.findById(userId);
     if (!user) return null;
 
     const { password_hash: _, ...userWithoutPassword } = user;
@@ -118,11 +114,16 @@ export class AuthService {
   }
 
   static async updateProfile(userId: string, data: {
-    display_name?: string;
-    avatar_url?: string;
-    notification_settings?: any;
+    name?: string;
   }): Promise<Omit<User, 'password_hash'>> {
-    const user = await UserModel.updateProfile(userId, data);
+    const userRepo = getUserRepository();
+    const user = await userRepo.update(userId, data);
+    if (!user) {
+      const error = new Error('User not found') as any;
+      error.status = 404;
+      error.code = 'RESOURCE_NOT_FOUND';
+      throw error;
+    }
     const { password_hash: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

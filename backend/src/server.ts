@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { initRepositories } from './database/repositories';
+import { seedMockData } from './database/seedData';
 import authRoutes from './routes/auth.routes';
 import videoRoutes from './routes/video.routes';
 import memoRoutes from './routes/memo.routes';
@@ -51,8 +53,17 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const server = app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+const server = app.listen(PORT, async () => {
+  // Initialize repositories and seed data
+  initRepositories('mock'); // Use mock database for now
+  
+  // Seed with test data if in development
+  if (process.env.NODE_ENV === 'development') {
+    await seedMockData();
+    logger.info('📦 Mock database seeded with test data');
+  }
+  
+  logger.info(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
 });
 
 process.on('SIGTERM', () => {

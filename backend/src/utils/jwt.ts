@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { User } from '../types/database';
+import { User } from '../database/repositories/userRepository';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
@@ -9,7 +9,7 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 export interface JwtPayload {
   userId: string;
   email: string;
-  username: string;
+  name: string;
 }
 
 export interface TokenPair {
@@ -22,7 +22,7 @@ export const generateTokens = (user: User): TokenPair => {
   const payload: JwtPayload = {
     userId: user.id,
     email: user.email,
-    username: user.username
+    name: user.name
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, {
