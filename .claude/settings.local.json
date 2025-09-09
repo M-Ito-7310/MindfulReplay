@@ -9,7 +9,19 @@
       "Bash(npx tsc:*)",
       "Bash(node:*)",
       "Bash(curl:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(psql:*)",
+      "Bash(pg_config:*)",
+      "Bash(where psql)",
+      "Bash(set PGPASSWORD=postgres)",
+      "Bash(sc query:*)",
+      "Read(//c/Program Files/PostgreSQL/17/bin/**)",
+      "Bash(set PGPASSWORD=postgres1234)",
+      "Bash(npx expo start:*)",
+      "Bash(npx expo install:*)"
     ],
     "deny": [],
     "ask": []

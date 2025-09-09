@@ -1,0 +1,42 @@
+// API Configuration
+export const API_CONFIG = {
+  BASE_URL: 'http://localhost:4000',
+  ENDPOINTS: {
+    // Auth endpoints
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
+    REFRESH: '/api/auth/refresh',
+    LOGOUT: '/api/auth/logout',
+    
+    // Video endpoints
+    VIDEOS: '/api/videos',
+    VIDEO_DETAIL: (id: string) => `/api/videos/${id}`,
+    
+    // Memo endpoints
+    MEMOS: '/api/memos',
+    MEMO_DETAIL: (id: string) => `/api/memos/${id}`,
+    
+    // Task endpoints
+    TASKS: '/api/tasks',
+    TASK_DETAIL: (id: string) => `/api/tasks/${id}`,
+    
+    // Reminder endpoints
+    REMINDERS: '/api/reminders',
+    REMINDER_DETAIL: (id: string) => `/api/reminders/${id}`,
+  },
+  TIMEOUT: 10000, // 10 seconds
+};
+
+// Request headers
+export const API_HEADERS = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+};
+
+// Storage keys for AsyncStorage
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: '@mindful_replay:access_token',
+  REFRESH_TOKEN: '@mindful_replay:refresh_token',
+  USER_DATA: '@mindful_replay:user_data',
+  THEME_PREFERENCE: '@mindful_replay:theme',
+};
