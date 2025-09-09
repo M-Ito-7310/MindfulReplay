@@ -21,7 +21,10 @@
       "Read(//c/Program Files/PostgreSQL/17/bin/**)",
       "Bash(set PGPASSWORD=postgres1234)",
       "Bash(npx expo start:*)",
-      "Bash(npx expo install:*)"
+      "Bash(npx expo install:*)",
+      "Bash(npm install:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []
