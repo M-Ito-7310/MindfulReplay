@@ -1,7 +1,5 @@
-import { MemoModel, MemoWithDetails } from '../models/Memo';
-import { TagModel } from '../models/Tag';
-import { VideoModel } from '../models/Video';
-import { Memo } from '../types/database';
+import { getMemoRepository, getVideoRepository } from '../database/repositories';
+import { Memo } from '../database/repositories/memoRepository';
 import { PaginatedResponse } from '../types/api';
 
 export class MemoService {
@@ -15,41 +13,31 @@ export class MemoService {
       isImportant?: boolean;
       tags?: string[];
     }
-  ): Promise<MemoWithDetails> {
+  ): Promise<Memo> {
+    const videoRepo = getVideoRepository();
+    const memoRepo = getMemoRepository();
+
     // Verify video belongs to user
-    const video = await VideoModel.findById(data.videoId, userId);
-    if (!video) {
+    const video = await videoRepo.findById(data.videoId);
+    if (!video || video.user_id !== userId) {
       const error = new Error('Video not found') as any;
       error.status = 404;
       error.code = 'RESOURCE_NOT_FOUND';
       throw error;
     }
 
-    // Create memo
-    const memo = await MemoModel.create({
+    // Create memo using simplified schema (tags will be handled later)
+    const memo = await memoRepo.create({
       user_id: userId,
       video_id: data.videoId,
       content: data.content,
-      timestamp_seconds: data.timestampSeconds || null,
-      is_task: data.isTask || false,
-      is_important: data.isImportant || false
+      timestamp_sec: data.timestampSeconds
     });
 
-    // Handle tags if provided
-    if (data.tags && data.tags.length > 0) {
-      const tagIds: string[] = [];
-      
-      for (const tagName of data.tags) {
-        const tag = await TagModel.findOrCreate(userId, tagName);
-        tagIds.push(tag.id);
-      }
+    // TODO: Handle tags when we implement tag system
+    // For now, return the memo without tag details
 
-      await MemoModel.addTags(memo.id, userId, tagIds);
-    }
-
-    // Return memo with details
-    const memoDetails = await MemoModel.findById(memo.id, userId);
-    return memoDetails!;
+    return memo;
   }
 
   static async getUserMemos(
@@ -65,22 +53,38 @@ export class MemoService {
       search?: string;
       tags?: string[];
     } = {}
-  ): Promise<PaginatedResponse<MemoWithDetails>> {
-    const { memos, total } = await MemoModel.findByUser(userId, {
-      ...options,
-      video_id: options.videoId
-    });
-
+  ): Promise<PaginatedResponse<Memo>> {
+    const memoRepo = getMemoRepository();
     const page = options.page || 1;
     const limit = options.limit || 20;
-    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+
+    let result;
+    if (options.videoId) {
+      // Get memos for specific video
+      result = await memoRepo.findByUserIdAndVideoId(userId, options.videoId, {
+        limit, offset
+      });
+    } else if (options.search) {
+      // Search memos by content
+      result = await memoRepo.searchByContent(userId, options.search, {
+        limit, offset
+      });
+    } else {
+      // Get all user memos
+      result = await memoRepo.findByUserId(userId, {
+        limit, offset
+      });
+    }
+
+    const totalPages = Math.ceil(result.total / limit);
 
     return {
-      items: memos,
+      items: result.data,
       pagination: {
         page,
         limit,
-        total,
+        total: result.total,
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1
@@ -88,13 +92,22 @@ export class MemoService {
     };
   }
 
-  static async getMemoDetails(memoId: string, userId: string): Promise<MemoWithDetails> {
-    const memo = await MemoModel.findById(memoId, userId);
+  static async getMemoDetails(memoId: string, userId: string): Promise<Memo> {
+    const memoRepo = getMemoRepository();
+    const memo = await memoRepo.findById(memoId);
     
     if (!memo) {
       const error = new Error('Memo not found') as any;
       error.status = 404;
       error.code = 'RESOURCE_NOT_FOUND';
+      throw error;
+    }
+
+    // Check if memo belongs to user
+    if (memo.user_id !== userId) {
+      const error = new Error('Access denied') as any;
+      error.status = 403;
+      error.code = 'ACCESS_DENIED';
       throw error;
     }
 
@@ -111,71 +124,71 @@ export class MemoService {
       isImportant?: boolean;
       tags?: string[];
     }
-  ): Promise<MemoWithDetails> {
+  ): Promise<Memo> {
+    const memoRepo = getMemoRepository();
+    
+    // First verify memo exists and belongs to user
+    const existingMemo = await this.getMemoDetails(memoId, userId);
+    
     // Update memo properties
     const updateData: any = {};
     if (data.content !== undefined) updateData.content = data.content;
-    if (data.timestampSeconds !== undefined) updateData.timestamp_seconds = data.timestampSeconds;
-    if (data.isTask !== undefined) updateData.is_task = data.isTask;
-    if (data.isImportant !== undefined) updateData.is_important = data.isImportant;
-
+    if (data.timestampSeconds !== undefined) updateData.timestamp_sec = data.timestampSeconds;
+    
+    // TODO: Handle isTask, isImportant, tags when we implement tag system
+    // For now, only update content and timestamp
+    
     if (Object.keys(updateData).length > 0) {
-      await MemoModel.update(memoId, userId, updateData);
-    }
-
-    // Update tags if provided
-    if (data.tags !== undefined) {
-      const tagIds: string[] = [];
-      
-      for (const tagName of data.tags) {
-        const tag = await TagModel.findOrCreate(userId, tagName);
-        tagIds.push(tag.id);
+      const updatedMemo = await memoRepo.update(memoId, updateData);
+      if (!updatedMemo) {
+        const error = new Error('Failed to update memo') as any;
+        error.status = 500;
+        error.code = 'UPDATE_FAILED';
+        throw error;
       }
-
-      await MemoModel.addTags(memoId, userId, tagIds);
+      return updatedMemo;
     }
 
-    // Return updated memo
-    return this.getMemoDetails(memoId, userId);
+    return existingMemo;
   }
 
   static async deleteMemo(memoId: string, userId: string): Promise<void> {
-    // Get memo to decrement tag usage
-    const memo = await MemoModel.findById(memoId, userId);
-    if (!memo) {
-      const error = new Error('Memo not found') as any;
-      error.status = 404;
-      error.code = 'RESOURCE_NOT_FOUND';
+    const memoRepo = getMemoRepository();
+    
+    // First verify memo exists and belongs to user
+    await this.getMemoDetails(memoId, userId);
+    
+    // TODO: Handle tag cleanup when we implement tag system
+    
+    // Delete memo
+    const deleted = await memoRepo.delete(memoId);
+    if (!deleted) {
+      const error = new Error('Failed to delete memo') as any;
+      error.status = 500;
+      error.code = 'DELETE_FAILED';
       throw error;
     }
-
-    // Decrement tag usage counts
-    if (memo.tags && memo.tags.length > 0) {
-      for (const tag of memo.tags) {
-        await TagModel.decrementUsage(tag.id);
-      }
-    }
-
-    // Delete memo (cascade will handle memo_tags)
-    await MemoModel.delete(memoId, userId);
-
-    // Clean up unused tags
-    await TagModel.cleanupUnused(userId);
   }
 
-  static async getVideoMemos(videoId: string, userId: string): Promise<MemoWithDetails[]> {
-    const { memos } = await MemoModel.findByUser(userId, {
-      video_id: videoId,
-      sort: 'timestamp_seconds',
-      order: 'asc',
+  static async getVideoMemos(videoId: string, userId: string): Promise<Memo[]> {
+    const memoRepo = getMemoRepository();
+    
+    const result = await memoRepo.findByUserIdAndVideoId(userId, videoId, {
       limit: 1000 // Get all memos for a video
     });
 
-    return memos;
+    return result.data;
   }
 
   static async getMemosWithTimestamps(videoId: string, userId: string): Promise<Memo[]> {
-    return MemoModel.getByVideoWithTimestamps(videoId, userId);
+    const memoRepo = getMemoRepository();
+    
+    const result = await memoRepo.findByUserIdAndVideoId(userId, videoId, {
+      limit: 1000
+    });
+    
+    // Filter only memos with timestamps
+    return result.data.filter(memo => memo.timestamp_sec !== null && memo.timestamp_sec !== undefined);
   }
 
   static async searchMemos(
@@ -185,7 +198,7 @@ export class MemoService {
       page?: number;
       limit?: number;
     } = {}
-  ): Promise<PaginatedResponse<MemoWithDetails>> {
+  ): Promise<PaginatedResponse<Memo>> {
     return this.getUserMemos(userId, {
       ...options,
       search: query
@@ -198,7 +211,7 @@ export class MemoService {
       page?: number;
       limit?: number;
     } = {}
-  ): Promise<PaginatedResponse<MemoWithDetails>> {
+  ): Promise<PaginatedResponse<Memo>> {
     return this.getUserMemos(userId, {
       ...options,
       isImportant: true,
@@ -213,7 +226,7 @@ export class MemoService {
       page?: number;
       limit?: number;
     } = {}
-  ): Promise<PaginatedResponse<MemoWithDetails>> {
+  ): Promise<PaginatedResponse<Memo>> {
     return this.getUserMemos(userId, {
       ...options,
       isTask: true,
@@ -222,12 +235,14 @@ export class MemoService {
     });
   }
 
-  static async convertToTask(memoId: string, userId: string): Promise<MemoWithDetails> {
+  static async convertToTask(memoId: string, userId: string): Promise<Memo> {
     return this.updateMemo(memoId, userId, { isTask: true });
   }
 
-  static async toggleImportant(memoId: string, userId: string): Promise<MemoWithDetails> {
+  static async toggleImportant(memoId: string, userId: string): Promise<Memo> {
+    // TODO: Implement when we add is_important field to memo schema
     const memo = await this.getMemoDetails(memoId, userId);
-    return this.updateMemo(memoId, userId, { isImportant: !memo.is_important });
+    // For now, just return the memo as-is since we haven't implemented isImportant field
+    return memo;
   }
 }

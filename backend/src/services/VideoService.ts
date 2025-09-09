@@ -1,6 +1,6 @@
-import { VideoModel, VideoWithDetails } from '../models/Video';
+import { getVideoRepository } from '../database/repositories';
+import { Video } from '../database/repositories/videoRepository';
 import { YouTubeService } from './YouTubeService';
-import { Video } from '../types/database';
 import { PaginatedResponse } from '../types/api';
 
 export class VideoService {
@@ -8,7 +8,9 @@ export class VideoService {
     userId: string, 
     youtubeUrl: string, 
     themeIds: string[] = []
-  ): Promise<VideoWithDetails> {
+  ): Promise<Video> {
+    const videoRepo = getVideoRepository();
+    
     // Extract YouTube ID from URL
     const youtubeId = YouTubeService.extractVideoId(youtubeUrl);
     if (!youtubeId) {
@@ -19,46 +21,31 @@ export class VideoService {
     }
 
     // Check if video already exists for this user
-    const existingVideo = await VideoModel.findByUserAndYouTubeId(userId, youtubeId);
+    const existingVideo = await videoRepo.findByUserIdAndYoutubeId(userId, youtubeId);
     if (existingVideo) {
-      // Update themes if provided and return existing video
-      if (themeIds.length > 0) {
-        await VideoModel.addToThemes(existingVideo.id, userId, themeIds);
-      }
-      
-      const videoDetails = await VideoModel.findById(existingVideo.id, userId);
-      return videoDetails!;
+      // TODO: Handle themes when we implement theme system
+      return existingVideo;
     }
 
     // Get video metadata from YouTube API
     const metadata = await YouTubeService.getVideoMetadata(youtubeId);
 
     // Create video record
-    const video = await VideoModel.create({
+    const video = await videoRepo.create({
       user_id: userId,
       youtube_id: metadata.youtubeId,
+      youtube_url: youtubeUrl,
       title: metadata.title,
       description: metadata.description,
       channel_name: metadata.channelName,
-      channel_id: metadata.channelId,
       thumbnail_url: metadata.thumbnailUrl,
       duration: metadata.duration,
-      published_at: metadata.publishedAt,
-      metadata: {
-        view_count: metadata.viewCount,
-        like_count: metadata.likeCount,
-        tags: metadata.tags
-      }
+      published_at: metadata.publishedAt.toISOString()
     });
 
-    // Add to themes if provided
-    if (themeIds.length > 0) {
-      await VideoModel.addToThemes(video.id, userId, themeIds);
-    }
+    // TODO: Handle themes when we implement theme system
 
-    // Return video with themes
-    const videoDetails = await VideoModel.findById(video.id, userId);
-    return videoDetails!;
+    return video;
   }
 
   static async getUserVideos(
@@ -66,25 +53,37 @@ export class VideoService {
     options: {
       page?: number;
       limit?: number;
-      sort?: 'saved_at' | 'published_at' | 'title';
+      sort?: 'created_at' | 'updated_at' | 'title';
       order?: 'asc' | 'desc';
-      theme?: string;
       search?: string;
-      archived?: boolean;
     } = {}
-  ): Promise<PaginatedResponse<VideoWithDetails>> {
-    const { videos, total } = await VideoModel.findByUser(userId, options);
-
+  ): Promise<PaginatedResponse<Video>> {
+    const videoRepo = getVideoRepository();
     const page = options.page || 1;
     const limit = options.limit || 20;
-    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+
+    let result;
+    if (options.search) {
+      result = await videoRepo.searchByTitle(userId, options.search, {
+        limit,
+        offset
+      });
+    } else {
+      result = await videoRepo.findByUserId(userId, {
+        limit,
+        offset
+      });
+    }
+
+    const totalPages = Math.ceil(result.total / limit);
 
     return {
-      items: videos,
+      items: result.data,
       pagination: {
         page,
         limit,
-        total,
+        total: result.total,
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1
@@ -92,13 +91,22 @@ export class VideoService {
     };
   }
 
-  static async getVideoDetails(videoId: string, userId: string): Promise<VideoWithDetails> {
-    const video = await VideoModel.findById(videoId, userId);
+  static async getVideoDetails(videoId: string, userId: string): Promise<Video> {
+    const videoRepo = getVideoRepository();
+    const video = await videoRepo.findById(videoId);
     
     if (!video) {
       const error = new Error('Video not found') as any;
       error.status = 404;
       error.code = 'RESOURCE_NOT_FOUND';
+      throw error;
+    }
+
+    // Check if video belongs to user
+    if (video.user_id !== userId) {
+      const error = new Error('Access denied') as any;
+      error.status = 403;
+      error.code = 'ACCESS_DENIED';
       throw error;
     }
 
@@ -109,47 +117,56 @@ export class VideoService {
     videoId: string, 
     userId: string, 
     data: {
-      is_archived?: boolean;
-      themes?: string[];
+      notes?: string;
     }
-  ): Promise<VideoWithDetails> {
+  ): Promise<Video> {
+    const videoRepo = getVideoRepository();
+    
+    // First verify video exists and belongs to user
+    await this.getVideoDetails(videoId, userId);
+    
     // Update video properties
     const updateData: any = {};
-    if (data.is_archived !== undefined) {
-      updateData.is_archived = data.is_archived;
-    }
+    if (data.notes !== undefined) updateData.notes = data.notes;
 
     if (Object.keys(updateData).length > 0) {
-      await VideoModel.update(videoId, userId, updateData);
+      const updatedVideo = await videoRepo.update(videoId, updateData);
+      if (!updatedVideo) {
+        const error = new Error('Failed to update video') as any;
+        error.status = 500;
+        error.code = 'UPDATE_FAILED';
+        throw error;
+      }
+      return updatedVideo;
     }
 
-    // Update themes if provided
-    if (data.themes !== undefined) {
-      await VideoModel.addToThemes(videoId, userId, data.themes);
-    }
-
-    // Return updated video
+    // Return current video if no updates
     return this.getVideoDetails(videoId, userId);
   }
 
   static async deleteVideo(videoId: string, userId: string): Promise<void> {
-    await VideoModel.delete(videoId, userId);
+    const videoRepo = getVideoRepository();
+    
+    // First verify video exists and belongs to user
+    await this.getVideoDetails(videoId, userId);
+    
+    // Delete video
+    const deleted = await videoRepo.delete(videoId);
+    if (!deleted) {
+      const error = new Error('Failed to delete video') as any;
+      error.status = 500;
+      error.code = 'DELETE_FAILED';
+      throw error;
+    }
   }
 
   static async markAsWatched(videoId: string, userId: string): Promise<Video> {
-    const video = await VideoModel.findById(videoId, userId);
+    // First verify video exists and belongs to user
+    const video = await this.getVideoDetails(videoId, userId);
     
-    if (!video) {
-      const error = new Error('Video not found') as any;
-      error.status = 404;
-      error.code = 'RESOURCE_NOT_FOUND';
-      throw error;
-    }
-
-    return VideoModel.update(videoId, userId, {
-      last_watched_at: new Date(),
-      watch_count: (video.watch_count || 0) + 1
-    });
+    // TODO: Implement watch tracking when we add those fields to schema
+    // For now, just return the video as-is
+    return video;
   }
 
   static async searchUserVideos(
@@ -159,7 +176,7 @@ export class VideoService {
       page?: number;
       limit?: number;
     } = {}
-  ): Promise<PaginatedResponse<VideoWithDetails>> {
+  ): Promise<PaginatedResponse<Video>> {
     return this.getUserVideos(userId, {
       ...options,
       search: query

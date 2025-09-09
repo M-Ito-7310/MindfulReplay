@@ -61,7 +61,7 @@ export interface Memo {
   user_id: string;
   video_id: string;
   content: string;
-  timestamp: number;
+  timestamp_sec?: number;
   created_at: string;
   updated_at: string;
   tags?: Tag[];
@@ -139,7 +139,7 @@ export interface VideoForm {
 
 export interface MemoForm {
   content: string;
-  timestamp: number;
+  timestamp_sec?: number;
   tag_ids?: string[];
 }
 

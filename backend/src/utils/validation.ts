@@ -80,3 +80,26 @@ export const paginationSchema = z.object({
   sort: z.string().optional(),
   order: z.enum(['asc', 'desc']).optional()
 });
+
+// Additional schemas for our repository pattern
+export const createMemoSchema = z.object({
+  video_id: z.string().uuid('Invalid video ID'),
+  content: z.string().min(1, 'Content is required').max(65535, 'Content is too long'),
+  timestamp_sec: z.number().int().min(0).optional()
+});
+
+export const updateMemoSchema = z.object({
+  content: z.string().min(1, 'Content is required').max(65535, 'Content is too long').optional(),
+  timestamp_sec: z.number().int().min(0).optional()
+});
+
+export const idParamSchema = z.object({
+  id: z.string().uuid('Invalid ID format')
+});
+
+export const queryOptionsSchema = z.object({
+  limit: z.string().transform(Number).pipe(z.number().int().min(1).max(100)).optional(),
+  offset: z.string().transform(Number).pipe(z.number().int().min(0)).optional(),
+  orderBy: z.string().optional(),
+  orderDirection: z.enum(['asc', 'desc']).optional()
+});
