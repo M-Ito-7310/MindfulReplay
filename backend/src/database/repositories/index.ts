@@ -1,17 +1,19 @@
 import { UserRepository } from './userRepository';
 import { VideoRepository } from './videoRepository';
 import { MemoRepository } from './memoRepository';
+import { TaskRepository } from './taskRepository';
 import { MockUserRepository } from './mock/mockUserRepository';
 import { MockVideoRepository } from './mock/mockVideoRepository';
 import { MockMemoRepository } from './mock/mockMemoRepository';
+import { MockTaskRepository } from './mock/mockTaskRepository';
 
 // Repository factory for dependency injection
 export interface Repositories {
   userRepository: UserRepository;
   videoRepository: VideoRepository;
   memoRepository: MemoRepository;
+  taskRepository: TaskRepository;
   // TODO: Add other repositories as they're implemented
-  // taskRepository: TaskRepository;
   // reminderRepository: ReminderRepository;
 }
 
@@ -26,6 +28,7 @@ export function createRepositories(adapter: DatabaseAdapter = 'mock'): Repositor
         userRepository: new MockUserRepository(),
         videoRepository: new MockVideoRepository(),
         memoRepository: new MockMemoRepository(),
+        taskRepository: new MockTaskRepository(),
       };
     
     case 'postgresql':
@@ -61,3 +64,4 @@ export function getRepositories(): Repositories {
 export const getUserRepository = (): UserRepository => getRepositories().userRepository;
 export const getVideoRepository = (): VideoRepository => getRepositories().videoRepository;
 export const getMemoRepository = (): MemoRepository => getRepositories().memoRepository;
+export const getTaskRepository = (): TaskRepository => getRepositories().taskRepository;

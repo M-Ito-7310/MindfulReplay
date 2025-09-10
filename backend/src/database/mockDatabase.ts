@@ -42,9 +42,10 @@ export interface MockTask {
   memo_id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  due_date?: Date;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  due_date?: string;
+  completed_at?: string;
   created_at: Date;
   updated_at: Date;
 }

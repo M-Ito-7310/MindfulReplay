@@ -84,8 +84,8 @@ export interface Task {
   memo_id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
   completed_at?: string;
   created_at: string;
@@ -146,6 +146,6 @@ export interface MemoForm {
 export interface TaskForm {
   title: string;
   description?: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
 }
