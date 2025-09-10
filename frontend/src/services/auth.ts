@@ -62,7 +62,7 @@ class AuthService {
 
       if (response.success && response.data) {
         await this.storeAuthData(response.data);
-        return response.data.accessToken;
+        return response.data.tokens.accessToken;
       }
 
       return null;
@@ -77,13 +77,13 @@ class AuthService {
   private async storeAuthData(authData: AuthResponse): Promise<void> {
     try {
       await AsyncStorage.multiSet([
-        [STORAGE_KEYS.ACCESS_TOKEN, authData.accessToken],
-        [STORAGE_KEYS.REFRESH_TOKEN, authData.refreshToken],
+        [STORAGE_KEYS.ACCESS_TOKEN, authData.tokens.accessToken],
+        [STORAGE_KEYS.REFRESH_TOKEN, authData.tokens.refreshToken],
         [STORAGE_KEYS.USER_DATA, JSON.stringify(authData.user)],
       ]);
 
       // Set token in API service
-      await apiService.setAuthToken(authData.accessToken);
+      await apiService.setAuthToken(authData.tokens.accessToken);
     } catch (error) {
       console.error('Error storing auth data:', error);
       throw new Error('Failed to store authentication data');

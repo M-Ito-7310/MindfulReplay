@@ -31,10 +31,12 @@ export interface AuthTokens {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
   user: User;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  };
 }
 
 // Video Types

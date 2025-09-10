@@ -6,6 +6,8 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "entryPoint": "./index.js",
+    "scheme": "mindfulreplay",
+    "platforms": ["ios", "android", "web"],
     "assetBundlePatterns": [
       "**/*"
     ],

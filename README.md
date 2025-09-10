@@ -10,20 +10,23 @@ MindfulReplayは、YouTube動画から得た知識を実際の行動に結びつ
 
 ### ✅ 完了済み
 - バックエンドAPI実装（認証、CRUD操作）
-- フロントエンド基盤（React Native + TypeScript）
-- UIコンポーネント（ログイン、サインアップ、動画リスト）
-- JWT認証システム
-- API サービス層
+- フロントエンド・バックエンド統合（完全動作確認済み）
+- JWT認証システム（トークン管理・自動リフレッシュ）
+- TaskService API統合（全CRUD操作対応）
+- React Native Web対応（ブラウザでのテスト実行可能）
+- Expo開発環境セットアップ（Metro bundler最適化済み）
+- ポート設定統一（バックエンド:3000、フロントエンド:8000）
+- 型安全なAPI通信（TypeScript完全対応）
 
 ### 🚧 作業中
-- PostgreSQLデータベース接続設定
-- Expo実行環境の調整
+- 動画追加機能（YouTube API統合準備中）
+- PostgreSQLデータベース接続（現在はMockDB使用）
 
 ### 📋 今後の実装予定
-- メモ・タスク管理UI
 - YouTube API統合
 - プッシュ通知（Firebase）
 - E2Eテスト
+- 本番環境デプロイ
 
 ## 主な機能
 
@@ -58,23 +61,23 @@ MindfulReplayは、YouTube動画から得た知識を実際の行動に結びつ
 - Cloud SQL
 - Firebase (Push通知)
 
-## 開発環境のセットアップ
+## 🚀 開発環境のセットアップ（動作確認済み）
 
 ### 必要な環境
 
 - Node.js 18.0.0以上
-- PostgreSQL 14以上
 - Git
+- （PostgreSQL 14以上 - 将来の本格運用時）
 
-### インストール手順
+### ✅ クイックスタート手順
 
-1. リポジトリのクローン
+1. **リポジトリのクローン**
 ```bash
 git clone https://github.com/M-Ito-7310/MindfulReplay.git
 cd MindfulReplay
 ```
 
-2. 依存関係のインストール
+2. **依存関係のインストール**
 
 フロントエンド:
 ```bash
@@ -88,79 +91,80 @@ cd ../backend
 npm install
 ```
 
-3. 環境変数の設定
-
-バックエンドの環境変数:
-```bash
-cd backend
-# .envファイルを作成し、以下の内容を設定
-```
-
-.env ファイルの例:
-```env
-# Server Configuration
-PORT=4000
-NODE_ENV=development
-
-# Database Configuration
-DATABASE_URL=postgresql://postgres:your_password@localhost:5432/mindful_replay
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_NAME=mindful_replay
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=your-super-secret-refresh-key
-JWT_REFRESH_EXPIRES_IN=30d
-
-# YouTube API
-YOUTUBE_API_KEY=your-youtube-data-api-v3-key
-```
-
-4. データベースのセットアップ
-
-PostgreSQLデータベースを作成:
-```bash
-createdb mindful_replay
-```
-
-スキーマの適用:
-```bash
-cd database
-psql -U postgres -d mindful_replay -f schema.sql
-```
-
-5. 開発サーバーの起動
-
-バックエンド:
+3. **バックエンドサーバーの起動** (ポート: 3000)
 ```bash
 cd backend
 npm run dev
-# サーバーが http://localhost:4000 で起動します
+# ✅ サーバーが http://localhost:3000 で起動
+# ✅ MockDBでテストデータ自動生成
 ```
 
-フロントエンド:
+4. **フロントエンドサーバーの起動** (ポート: 8000)
 ```bash
 cd frontend
-npx expo start
-# Expo Developer Tools が起動します
-# - Web版: w キーを押す
-# - Android: a キーを押す（エミュレータ要）
-# - iOS: i キーを押す（Mac + Xcode要）
+npm start
+# ✅ Expo開発サーバーが http://localhost:8000 で起動
+# ✅ Web版: w キーを押すかブラウザでアクセス
 ```
 
-## 動作確認
+## 📱 動作確認とテスト
 
-### APIヘルスチェック
+### 🌐 Webブラウザでのテスト
 ```bash
-curl http://localhost:4000/health
-# レスポンス: {"status":"healthy","timestamp":"...","environment":"development"}
+# バックエンドヘルスチェック
+curl http://localhost:3000/health
+
+# フロントエンドアクセス
+# ブラウザで http://localhost:8000 にアクセス
 ```
 
-### 注意事項
-- PostgreSQLの接続設定が必要です（.envファイルのDB_PASSWORD）
-- フロントエンドのExpo実行には追加の依存関係インストールが必要な場合があります
+### 👤 デモアカウント情報
+**テストアカウント1:**
+- メール: `test@example.com`
+- パスワード: `password123`
+
+**テストアカウント2:**
+- メール: `demo@mindfulreplay.com`
+- パスワード: `password123`
+
+### 📊 利用可能なテストデータ
+ログイン後、以下のサンプルデータが利用できます：
+- **動画**: 3つのサンプル動画
+- **メモ**: 7つのサンプルメモ
+- **タスク**: 5つのサンプルタスク
+- **タグ**: プログラミング学習、ビジネススキルなど
+
+### 📋 現在の機能状況
+- ✅ **認証**: ログイン/サインアップ（完全動作）
+- ✅ **API統合**: すべてのCRUD操作（完全動作）
+- ✅ **タスク管理**: 作成・編集・削除（完全動作）
+- 🚧 **動画追加**: UI表示・開発中メッセージ（準備中）
+- ✅ **メモ管理**: 基本機能（完全動作）
+
+### 🔧 トラブルシューティング
+
+**ポート競合エラーの場合:**
+```bash
+# 使用中のポートを確認
+netstat -an | grep -E "(3000|8000)"
+
+# プロセスを停止してから再起動
+```
+
+**TypeScriptエラーの場合:**
+```bash
+# フロントエンドで型チェック
+cd frontend && npm run typecheck
+
+# バックエンドで型チェック
+cd backend && npm run typecheck
+```
+
+**Expoキャッシュクリア:**
+```bash
+cd frontend
+npx expo start -c
+```
 
 ## 開発コマンド
 

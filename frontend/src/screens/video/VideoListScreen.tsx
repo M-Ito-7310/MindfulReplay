@@ -58,8 +58,18 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
   };
 
   const handleAddVideo = () => {
-    if (navigation) {
-      navigation.navigate('AddVideo');
+    console.log('動画追加ボタンがクリックされました');
+    
+    // React Native WebではAlertが動作しない場合があるため、window.alertを使用
+    if (typeof window !== 'undefined') {
+      window.alert('動画追加機能は開発中です。\n\nYouTube URLを入力して動画を追加する機能を今後実装予定です。');
+    } else {
+      // ネイティブ環境での場合
+      Alert.alert(
+        '動画追加',
+        '動画追加機能は開発中です。\n\nYouTube URLを入力して動画を追加する機能を今後実装予定です。',
+        [{ text: 'OK' }]
+      );
     }
   };
 
