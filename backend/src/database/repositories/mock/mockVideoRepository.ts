@@ -34,8 +34,8 @@ export class MockVideoRepository implements VideoRepository {
   }
 
   async findByYouTubeId(youtubeId: string): Promise<Video | null> {
-    const allVideos = Array.from((mockDb as any).videos.values());
-    const video = allVideos.find((v: any) => v.youtube_id === youtubeId);
+    const allVideos = Array.from((mockDb as any).videos.values()) as Video[];
+    const video = allVideos.find((v: Video) => v.youtube_id === youtubeId);
     return video || null;
   }
 

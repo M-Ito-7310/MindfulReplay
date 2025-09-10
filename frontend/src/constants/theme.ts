@@ -28,6 +28,7 @@ export const COLORS = {
   SUCCESS: '#27ae60',
   WARNING: '#f39c12',
   ERROR: '#e74c3c',
+  ERROR_LIGHT: '#fde8e8',
   INFO: '#3498db',
   
   // Background colors

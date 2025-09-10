@@ -50,7 +50,6 @@ class ApiService {
     const token = await this.getAuthToken();
 
     const config: RequestInit = {
-      timeout: this.timeout,
       headers: {
         ...API_HEADERS,
         ...(token && { Authorization: `Bearer ${token}` }),

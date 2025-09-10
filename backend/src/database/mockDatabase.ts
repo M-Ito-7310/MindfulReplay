@@ -214,7 +214,7 @@ class MockDatabase {
       .filter(task => task.user_id === userId)
       .sort((a, b) => {
         // Sort by priority first, then by due date, then by created date
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
         const aPriority = priorityOrder[a.priority];
         const bPriority = priorityOrder[b.priority];
         

@@ -7,7 +7,7 @@ export class VideoService {
   static async saveVideo(
     userId: string, 
     youtubeUrl: string, 
-    themeIds: string[] = []
+    _themeIds: string[] = []
   ): Promise<Video> {
     const videoRepo = getVideoRepository();
     

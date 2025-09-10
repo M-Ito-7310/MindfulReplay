@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Button } from '@/components/common';
+import { VideoPreviewCard } from './VideoPreviewCard';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
-import { Video, VideoSaveResponse } from '@/types';
+import { Video, VideoSaveResponse, VideoPreviewResponse } from '@/types';
 
 interface AddVideoModalProps {
   visible: boolean;
@@ -22,13 +24,18 @@ interface AddVideoModalProps {
   onVideoAdded: (video: Video) => void;
 }
 
+type ModalStep = 'input' | 'preview';
+
 export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   visible,
   onClose,
   onVideoAdded,
 }) => {
+  const [step, setStep] = useState<ModalStep>('input');
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [videoPreview, setVideoPreview] = useState<VideoPreviewResponse | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateYouTubeUrl = (url: string): boolean => {
@@ -41,7 +48,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
     return patterns.some(pattern => pattern.test(url));
   };
 
-  const handleSubmit = async () => {
+  const handlePreviewVideo = async () => {
     const trimmedUrl = youtubeUrl.trim();
     
     if (!trimmedUrl) {
@@ -55,11 +62,43 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
     }
 
     setError(null);
-    setIsLoading(true);
+    setIsLoadingPreview(true);
+
+    try {
+      const response = await apiService.get<VideoPreviewResponse>(`${API_CONFIG.ENDPOINTS.VIDEO_PREVIEW}?url=${encodeURIComponent(trimmedUrl)}`);
+
+      if (response.success && response.data) {
+        setVideoPreview(response.data);
+        setStep('preview');
+      } else {
+        throw new Error('動画情報の取得に失敗しました');
+      }
+    } catch (error: any) {
+      console.error('Error previewing video:', error);
+      
+      let errorMessage = '動画情報の取得に失敗しました';
+      
+      if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleSaveVideo = async () => {
+    if (!videoPreview) return;
+
+    setError(null);
+    setIsSaving(true);
 
     try {
       const response = await apiService.post<VideoSaveResponse>(API_CONFIG.ENDPOINTS.VIDEOS, {
-        youtubeUrl: trimmedUrl,
+        youtubeUrl: videoPreview.youtubeUrl,
       });
 
       if (response.success && response.data?.video) {
@@ -76,9 +115,9 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
         throw new Error('動画の保存に失敗しました');
       }
     } catch (error: any) {
-      console.error('Error adding video:', error);
+      console.error('Error saving video:', error);
       
-      let errorMessage = '動画の追加に失敗しました';
+      let errorMessage = '動画の保存に失敗しました';
       
       if (error.response?.data?.error?.message) {
         errorMessage = error.response.data.error.message;
@@ -88,14 +127,23 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
 
       setError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const handleClose = () => {
-    setYoutubeUrl('');
+  const handleBackToInput = () => {
+    setStep('input');
+    setVideoPreview(null);
     setError(null);
-    setIsLoading(false);
+  };
+
+  const handleClose = () => {
+    setStep('input');
+    setYoutubeUrl('');
+    setVideoPreview(null);
+    setError(null);
+    setIsLoadingPreview(false);
+    setIsSaving(false);
     onClose();
   };
 
@@ -110,8 +158,11 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>YouTube動画を追加</Text>
+          <Text style={styles.headerTitle}>
+            {step === 'input' ? 'YouTube動画を追加' : '動画情報確認'}
+          </Text>
           <Button
             title="キャンセル"
             onPress={handleClose}
@@ -120,50 +171,99 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
           />
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>YouTube URL</Text>
-            <TextInput
-              style={[styles.input, error ? styles.inputError : null]}
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={youtubeUrl}
-              onChangeText={(text) => {
-                setYoutubeUrl(text);
-                if (error) setError(null);
-              }}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-              editable={!isLoading}
-            />
-            {error && <Text style={styles.errorText}>{error}</Text>}
-          </View>
+        {/* Content */}
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            {step === 'input' ? (
+              // Step 1: URL Input
+              <>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>YouTube URL</Text>
+                  <TextInput
+                    style={[styles.input, error ? styles.inputError : null]}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={youtubeUrl}
+                    onChangeText={(text) => {
+                      setYoutubeUrl(text);
+                      if (error) setError(null);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                    returnKeyType="done"
+                    onSubmitEditing={handlePreviewVideo}
+                    editable={!isLoadingPreview}
+                  />
+                  {error && <Text style={styles.errorText}>{error}</Text>}
+                </View>
 
-          <View style={styles.helpContainer}>
-            <Text style={styles.helpTitle}>対応するURL形式:</Text>
-            <Text style={styles.helpText}>• https://www.youtube.com/watch?v=VIDEO_ID</Text>
-            <Text style={styles.helpText}>• https://youtu.be/VIDEO_ID</Text>
-            <Text style={styles.helpText}>• https://www.youtube.com/embed/VIDEO_ID</Text>
-          </View>
+                <View style={styles.helpContainer}>
+                  <Text style={styles.helpTitle}>対応するURL形式:</Text>
+                  <Text style={styles.helpText}>• https://www.youtube.com/watch?v=VIDEO_ID</Text>
+                  <Text style={styles.helpText}>• https://youtu.be/VIDEO_ID</Text>
+                  <Text style={styles.helpText}>• https://www.youtube.com/embed/VIDEO_ID</Text>
+                </View>
 
-          <View style={styles.buttonContainer}>
-            <Button
-              title={isLoading ? "保存中..." : "動画を保存"}
-              onPress={handleSubmit}
-              disabled={isLoading || !youtubeUrl.trim()}
-              style={styles.submitButton}
-            />
-            {isLoading && (
-              <ActivityIndicator
-                size="small"
-                color={COLORS.PRIMARY}
-                style={styles.loadingIndicator}
-              />
+                <View style={styles.buttonContainer}>
+                  <Button
+                    title={isLoadingPreview ? "動画情報取得中..." : "動画情報を取得"}
+                    onPress={handlePreviewVideo}
+                    disabled={isLoadingPreview || !youtubeUrl.trim()}
+                    style={styles.submitButton}
+                  />
+                  {isLoadingPreview && (
+                    <ActivityIndicator
+                      size="small"
+                      color={COLORS.PRIMARY}
+                      style={styles.loadingIndicator}
+                    />
+                  )}
+                </View>
+              </>
+            ) : (
+              // Step 2: Video Preview and Save
+              <>
+                {videoPreview && (
+                  <VideoPreviewCard
+                    videoMetadata={videoPreview.videoMetadata}
+                    youtubeUrl={videoPreview.youtubeUrl}
+                  />
+                )}
+
+                {error && (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
+
+                <View style={styles.buttonContainer}>
+                  <View style={styles.buttonRow}>
+                    <Button
+                      title="戻る"
+                      onPress={handleBackToInput}
+                      variant="outline"
+                      style={styles.backButton}
+                      disabled={isSaving}
+                    />
+                    <Button
+                      title={isSaving ? "保存中..." : "動画を保存"}
+                      onPress={handleSaveVideo}
+                      disabled={isSaving}
+                      style={styles.saveButton}
+                    />
+                  </View>
+                  {isSaving && (
+                    <ActivityIndicator
+                      size="small"
+                      color={COLORS.PRIMARY}
+                      style={styles.loadingIndicator}
+                    />
+                  )}
+                </View>
+              </>
             )}
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -190,6 +290,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     minWidth: 80,
+  },
+  scrollContent: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -241,8 +344,28 @@ const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'center',
   },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: SPACING.MD,
+  },
+  backButton: {
+    flex: 1,
+  },
+  saveButton: {
+    flex: 2,
+  },
   submitButton: {
     minWidth: 200,
+  },
+  errorContainer: {
+    backgroundColor: COLORS.ERROR_LIGHT,
+    padding: SPACING.MD,
+    borderRadius: BORDER_RADIUS.MD,
+    marginBottom: SPACING.LG,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.ERROR,
   },
   loadingIndicator: {
     marginTop: SPACING.MD,

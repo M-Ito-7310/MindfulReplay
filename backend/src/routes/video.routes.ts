@@ -11,6 +11,7 @@ router.use(authenticateToken);
 router.post('/', VideoController.saveVideo);
 router.get('/', VideoController.getVideos);
 router.get('/search', VideoController.searchVideos);
+router.get('/preview', VideoController.previewVideo);
 router.get('/:id', VideoController.getVideo);
 router.put('/:id', VideoController.updateVideo);
 router.delete('/:id', VideoController.deleteVideo);

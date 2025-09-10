@@ -66,9 +66,15 @@ export interface VideoMetadata {
 }
 
 export class YouTubeService {
-  private static readonly API_KEY = process.env.YOUTUBE_API_KEY;
   private static readonly BASE_URL = 'https://www.googleapis.com/youtube/v3';
-  private static readonly USE_MOCK = process.env.YOUTUBE_USE_MOCK === 'true' || !process.env.YOUTUBE_API_KEY;
+  
+  private static getApiKey(): string | undefined {
+    return process.env.YOUTUBE_API_KEY;
+  }
+  
+  private static shouldUseMock(): boolean {
+    return process.env.YOUTUBE_USE_MOCK === 'true' || !process.env.YOUTUBE_API_KEY;
+  }
 
   static extractVideoId(url: string): string | null {
     const patterns = [
@@ -88,26 +94,27 @@ export class YouTubeService {
   }
 
   static async getVideoMetadata(youtubeId: string): Promise<VideoMetadata> {
+    const apiKey = this.getApiKey();
+    const useMock = this.shouldUseMock();
+
     // Use mock data if API key is not configured or mock mode is enabled
-    if (this.USE_MOCK) {
+    if (useMock) {
       return this.getMockVideoMetadata(youtubeId);
     }
 
-    if (!this.API_KEY) {
+    if (!apiKey) {
       throw new Error('YouTube API key is not configured');
     }
 
     try {
-      const response = await axios.get<YouTubeVideoResponse>(
-        `${this.BASE_URL}/videos`,
-        {
-          params: {
-            key: this.API_KEY,
-            id: youtubeId,
-            part: 'snippet,contentDetails,statistics'
-          }
-        }
-      );
+      const apiUrl = `${this.BASE_URL}/videos`;
+      const params = {
+        key: apiKey,
+        id: youtubeId,
+        part: 'snippet,contentDetails,statistics'
+      };
+      
+      const response = await axios.get<YouTubeVideoResponse>(apiUrl, { params });
 
       if (!response.data.items || response.data.items.length === 0) {
         const error = new Error('Video not found') as any;
@@ -228,7 +235,9 @@ export class YouTubeService {
   }
 
   static async searchVideos(query: string, maxResults: number = 10): Promise<any[]> {
-    if (!this.API_KEY) {
+    const apiKey = this.getApiKey();
+    
+    if (!apiKey) {
       throw new Error('YouTube API key is not configured');
     }
 
@@ -237,7 +246,7 @@ export class YouTubeService {
         `${this.BASE_URL}/search`,
         {
           params: {
-            key: this.API_KEY,
+            key: apiKey,
             q: query,
             part: 'snippet',
             type: 'video',

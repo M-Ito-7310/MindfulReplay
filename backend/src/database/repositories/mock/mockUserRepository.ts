@@ -18,7 +18,7 @@ export class MockUserRepository implements UserRepository {
     return user || null;
   }
 
-  async findAll(options?: QueryOptions): Promise<User[]> {
+  async findAll(_options?: QueryOptions): Promise<User[]> {
     // In a real implementation, this would apply pagination and ordering
     // For mock, we'll return all users (not realistic for production)
     return Array.from((mockDb as any).users.values());
@@ -29,7 +29,7 @@ export class MockUserRepository implements UserRepository {
     return user || null;
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(_id: string): Promise<boolean> {
     // For now, we won't implement user deletion in mock
     // This would be a complex operation affecting all related data
     return false;

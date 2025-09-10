@@ -14,7 +14,11 @@ export class AuthController {
       const validatedData = userRegistrationSchema.parse(req.body);
 
       // Register user
-      const result = await AuthService.register(validatedData);
+      const result = await AuthService.register({
+        email: validatedData.email,
+        name: validatedData.username,
+        password: validatedData.password
+      });
 
       const response: ApiResponse = {
         success: true,

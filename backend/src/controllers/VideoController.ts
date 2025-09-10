@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { VideoService } from '../services/VideoService';
+import { YouTubeService } from '../services/YouTubeService';
 import { videoSaveSchema, paginationSchema } from '../utils/validation';
 import { ApiResponse } from '../types/api';
 
@@ -46,7 +47,7 @@ export class VideoController {
       const options = {
         page: pagination.page || 1,
         limit: pagination.limit || 20,
-        sort: req.query.sort as 'saved_at' | 'published_at' | 'title' || 'saved_at',
+        sort: req.query.sort as 'created_at' | 'updated_at' | 'title' || 'created_at',
         order: pagination.order || 'desc',
         theme: req.query.theme as string,
         search: req.query.search as string,
@@ -200,6 +201,48 @@ export class VideoController {
       const response: ApiResponse = {
         success: true,
         data: result,
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: '1.0.0'
+        }
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async previewVideo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const youtubeUrl = req.query.url as string;
+
+      if (!youtubeUrl || youtubeUrl.trim().length === 0) {
+        const error = new Error('YouTube URL is required') as any;
+        error.status = 400;
+        error.code = 'VALIDATION_ERROR';
+        throw error;
+      }
+
+      // Extract YouTube ID from URL
+      const youtubeId = YouTubeService.extractVideoId(youtubeUrl);
+      
+      if (!youtubeId) {
+        const error = new Error('Invalid YouTube URL') as any;
+        error.status = 400;
+        error.code = 'VALIDATION_ERROR';
+        throw error;
+      }
+
+      // Get video metadata from YouTube API
+      const metadata = await YouTubeService.getVideoMetadata(youtubeId);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          videoMetadata: metadata,
+          youtubeUrl: youtubeUrl.trim()
+        },
         meta: {
           timestamp: new Date().toISOString(),
           version: '1.0.0'

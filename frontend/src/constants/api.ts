@@ -11,6 +11,7 @@ export const API_CONFIG = {
     // Video endpoints
     VIDEOS: '/api/videos',
     VIDEO_DETAIL: (id: string) => `/api/videos/${id}`,
+    VIDEO_PREVIEW: '/api/videos/preview',
     
     // Memo endpoints
     MEMOS: '/api/memos',

@@ -1,4 +1,4 @@
-import { getTaskRepository, getMemoRepository, getVideoRepository } from '../database/repositories';
+import { getTaskRepository, getMemoRepository } from '../database/repositories';
 import { Task, CreateTaskData, UpdateTaskData } from '../database/repositories/taskRepository';
 import { PaginatedResponse } from '../types/api';
 
@@ -119,7 +119,7 @@ export class TaskService {
     const taskRepo = getTaskRepository();
     
     // Validate task belongs to user
-    const existingTask = await this.getTaskDetails(taskId, userId);
+    await this.getTaskDetails(taskId, userId);
     
     const updateData: UpdateTaskData = {};
     

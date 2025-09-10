@@ -14,8 +14,7 @@ export class TaskController {
         description: validatedData.description,
         priority: validatedData.priority,
         dueDate: validatedData.dueDate,
-        memoId: validatedData.memoId,
-        videoId: validatedData.videoId
+        memoId: validatedData.memoId
       });
 
       const response: ApiResponse = {
@@ -118,10 +117,10 @@ export class TaskController {
 
       const task = await TaskService.updateTask(taskId, userId, {
         title: validatedData.title,
-        description: validatedData.description,
+        description: validatedData.description || undefined,
         priority: validatedData.priority,
         status: validatedData.status,
-        dueDate: validatedData.dueDate
+        dueDate: validatedData.dueDate || undefined
       });
 
       const response: ApiResponse = {

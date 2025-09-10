@@ -18,6 +18,23 @@ export interface VideoSaveResponse {
   video: Video;
 }
 
+export interface VideoPreviewResponse {
+  videoMetadata: {
+    youtubeId: string;
+    title: string;
+    description: string;
+    channelId: string;
+    channelName: string;
+    thumbnailUrl: string;
+    duration: number;
+    publishedAt: string;
+    viewCount: number;
+    likeCount: number | null;
+    tags: string[];
+  };
+  youtubeUrl: string;
+}
+
 export interface VideosListResponse {
   items: Video[];
   pagination: {

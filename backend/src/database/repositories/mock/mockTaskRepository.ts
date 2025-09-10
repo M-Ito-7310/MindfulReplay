@@ -5,7 +5,12 @@ import { getMemoRepository } from '../index';
 
 export class MockTaskRepository implements TaskRepository {
   async create(data: CreateTaskData): Promise<Task> {
-    const task = mockDb.createTask(data);
+    const taskData = {
+      ...data,
+      status: data.status || 'pending' as const,
+      priority: data.priority || 'medium' as const
+    };
+    const task = mockDb.createTask(taskData);
     return task;
   }
 
@@ -38,11 +43,11 @@ export class MockTaskRepository implements TaskRepository {
   }
 
   async findByMemoId(memoId: string, options?: QueryOptions): Promise<ListResponse<Task>> {
-    const allTasks = Array.from((mockDb as any).tasks.values());
+    const allTasks = Array.from((mockDb as any).tasks.values()) as Task[];
     let tasks = allTasks.filter((task: Task) => task.memo_id === memoId);
     
     // Sort by created_at desc
-    tasks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+    tasks.sort((a: Task, b: Task) => b.created_at.getTime() - a.created_at.getTime());
     
     // Apply pagination
     const total = tasks.length;
@@ -241,7 +246,7 @@ export class MockTaskRepository implements TaskRepository {
     const memoRepo = getMemoRepository();
     
     // First, find all memos for this video that belong to the user
-    const memosResult = await memoRepo.findByVideoId(userId, videoId, { limit: 1000 });
+    const memosResult = await memoRepo.findByVideoId(videoId, { limit: 1000 });
     const memoIds = memosResult.data.map(memo => memo.id);
     
     // Then find all tasks that are linked to any of these memos
