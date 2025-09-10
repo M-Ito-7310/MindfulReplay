@@ -5,19 +5,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { VideoListScreen } from './video/VideoListScreen';
 import { MemoListScreen } from './memo/MemoListScreen';
 import { TaskListScreen } from './task/TaskListScreen';
+import { authService } from '@/services/auth';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 
 interface MainScreenProps {
   navigation?: any;
+  onLogout?: () => void;
 }
 
 type TabType = 'videos' | 'memos' | 'tasks';
 
-export const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
+export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) => {
   const [activeTab, setActiveTab] = useState<TabType>('videos');
 
   const tabs = [
@@ -48,6 +51,48 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
     goBack: () => {
       // Handle back navigation within tab content
       console.log('Go back');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      
+      // Navigate back to login screen
+      if (onLogout) {
+        onLogout();
+      }
+      
+      // Success message
+      if (typeof window !== 'undefined') {
+        window.alert('ログアウトしました');
+      } else {
+        Alert.alert('ログアウト', 'ログアウトしました');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      
+      // Force logout even if API call fails
+      if (onLogout) {
+        onLogout();
+      }
+    }
+  };
+
+  const confirmLogout = () => {
+    if (typeof window !== 'undefined') {
+      if (window.confirm('ログアウトしますか？')) {
+        handleLogout();
+      }
+    } else {
+      Alert.alert(
+        'ログアウト',
+        'ログアウトしますか？',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { text: 'ログアウト', onPress: handleLogout, style: 'destructive' },
+        ]
+      );
     }
   };
 
@@ -87,6 +132,14 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>MindfulReplay</Text>
+        <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>ログアウト</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         <ScrollView 
@@ -110,6 +163,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.MD,
+    backgroundColor: COLORS.WHITE,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.GRAY_200,
+  },
+  headerTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.XL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+    color: COLORS.PRIMARY,
+  },
+  logoutButton: {
+    paddingVertical: SPACING.XS,
+    paddingHorizontal: SPACING.MD,
+    borderRadius: BORDER_RADIUS.SM,
+    backgroundColor: COLORS.GRAY_100,
+  },
+  logoutText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    color: COLORS.TEXT_SECONDARY,
   },
   tabBar: {
     backgroundColor: COLORS.WHITE,

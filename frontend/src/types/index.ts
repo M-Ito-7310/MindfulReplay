@@ -1,5 +1,5 @@
 // API Response Types
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: {
@@ -10,6 +10,23 @@ export interface ApiResponse<T> {
   meta?: {
     timestamp: string;
     request_id?: string;
+  };
+}
+
+// Specific response types
+export interface VideoSaveResponse {
+  video: Video;
+}
+
+export interface VideosListResponse {
+  items: Video[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 

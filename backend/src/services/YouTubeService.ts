@@ -68,6 +68,7 @@ export interface VideoMetadata {
 export class YouTubeService {
   private static readonly API_KEY = process.env.YOUTUBE_API_KEY;
   private static readonly BASE_URL = 'https://www.googleapis.com/youtube/v3';
+  private static readonly USE_MOCK = process.env.YOUTUBE_USE_MOCK === 'true' || !process.env.YOUTUBE_API_KEY;
 
   static extractVideoId(url: string): string | null {
     const patterns = [
@@ -87,6 +88,11 @@ export class YouTubeService {
   }
 
   static async getVideoMetadata(youtubeId: string): Promise<VideoMetadata> {
+    // Use mock data if API key is not configured or mock mode is enabled
+    if (this.USE_MOCK) {
+      return this.getMockVideoMetadata(youtubeId);
+    }
+
     if (!this.API_KEY) {
       throw new Error('YouTube API key is not configured');
     }
@@ -152,6 +158,58 @@ export class YouTubeService {
       serviceError.code = 'YOUTUBE_API_ERROR';
       throw serviceError;
     }
+  }
+
+  private static getMockVideoMetadata(youtubeId: string): VideoMetadata {
+    // Mock data for development and testing
+    const mockVideos: Record<string, VideoMetadata> = {
+      'dQw4w9WgXcQ': {
+        youtubeId: 'dQw4w9WgXcQ',
+        title: 'Rick Astley - Never Gonna Give You Up (Official Video)',
+        description: 'The official video for "Never Gonna Give You Up" by Rick Astley. Never Gonna Give You Up was a global smash on its release in July 1987, topping the charts...',
+        channelId: 'UCuAXFkgsw1L7xaCfnd5JJOw',
+        channelName: 'Rick Astley',
+        thumbnailUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+        duration: 213, // 3:33
+        publishedAt: new Date('2009-10-25T00:00:00Z'),
+        viewCount: 1000000000,
+        likeCount: 10000000,
+        tags: ['Rick Astley', 'Never Gonna Give You Up', '80s', 'pop']
+      },
+      'jNQXAC9IVRw': {
+        youtubeId: 'jNQXAC9IVRw',
+        title: 'Me at the zoo',
+        description: 'The first video on YouTube. Recorded at the San Diego Zoo.',
+        channelId: 'UC4QobU6STFB0P71PMvOGN5A',
+        channelName: 'jawed',
+        thumbnailUrl: 'https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg',
+        duration: 19,
+        publishedAt: new Date('2005-04-23T00:00:00Z'),
+        viewCount: 250000000,
+        likeCount: 5000000,
+        tags: ['first video', 'zoo', 'elephants']
+      }
+    };
+
+    // Return specific mock data if available, otherwise generate generic mock data
+    if (mockVideos[youtubeId]) {
+      return mockVideos[youtubeId];
+    }
+
+    // Generate generic mock data for unknown video IDs
+    return {
+      youtubeId,
+      title: `Sample Video - ${youtubeId}`,
+      description: `This is a mock video for development purposes. YouTube ID: ${youtubeId}. This video demonstrates the video metadata retrieval functionality without requiring actual YouTube API calls.`,
+      channelId: 'UC_MOCK_CHANNEL_ID',
+      channelName: 'Mock Channel',
+      thumbnailUrl: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
+      duration: 300, // 5 minutes
+      publishedAt: new Date(),
+      viewCount: Math.floor(Math.random() * 1000000),
+      likeCount: Math.floor(Math.random() * 50000),
+      tags: ['mock', 'development', 'sample']
+    };
   }
 
   private static parseDuration(duration: string): number {

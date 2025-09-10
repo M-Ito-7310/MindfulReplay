@@ -15,7 +15,8 @@ export default function App() {
   }, []);
 
   const checkAuthStatus = async () => {
-    const authenticated = await authService.isAuthenticated();
+    // Initialize authentication and set tokens in API service
+    const authenticated = await authService.initializeAuth();
     if (authenticated) {
       setCurrentScreen('Main');
       setIsAuthenticated(true);
@@ -27,9 +28,16 @@ export default function App() {
     replace: (screen: AppScreen) => setCurrentScreen(screen),
   };
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = async () => {
+    // Initialize authentication after successful login
+    await authService.initializeAuth();
     setIsAuthenticated(true);
     setCurrentScreen('Main');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentScreen('Login');
   };
 
   const renderScreen = () => {
@@ -49,7 +57,7 @@ export default function App() {
           />
         );
       case 'Main':
-        return <MainScreen navigation={navigation} />;
+        return <MainScreen navigation={navigation} onLogout={handleLogout} />;
       default:
         return (
           <LoginScreen 

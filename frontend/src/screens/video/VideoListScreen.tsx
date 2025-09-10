@@ -10,10 +10,11 @@ import {
   Alert,
 } from 'react-native';
 import { Button } from '@/components/common';
+import { AddVideoModal } from '@/components/video/AddVideoModal';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
-import { Video } from '@/types';
+import { Video, VideosListResponse } from '@/types';
 
 interface VideoListScreenProps {
   navigation?: any;
@@ -23,6 +24,7 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     loadVideos();
@@ -36,9 +38,11 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
     }
 
     try {
-      const response = await apiService.get<Video[]>(API_CONFIG.ENDPOINTS.VIDEOS);
+      const response = await apiService.get<VideosListResponse>(API_CONFIG.ENDPOINTS.VIDEOS);
       if (response.success && response.data) {
-        setVideos(response.data);
+        // Handle both paginated and direct array response
+        const videoData = response.data.items || response.data as any;
+        setVideos(videoData);
       }
     } catch (error) {
       Alert.alert(
@@ -58,19 +62,12 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
   };
 
   const handleAddVideo = () => {
-    console.log('動画追加ボタンがクリックされました');
-    
-    // React Native WebではAlertが動作しない場合があるため、window.alertを使用
-    if (typeof window !== 'undefined') {
-      window.alert('動画追加機能は開発中です。\n\nYouTube URLを入力して動画を追加する機能を今後実装予定です。');
-    } else {
-      // ネイティブ環境での場合
-      Alert.alert(
-        '動画追加',
-        '動画追加機能は開発中です。\n\nYouTube URLを入力して動画を追加する機能を今後実装予定です。',
-        [{ text: 'OK' }]
-      );
-    }
+    setShowAddModal(true);
+  };
+
+  const handleVideoAdded = (newVideo: Video) => {
+    // Add the new video to the list
+    setVideos(prevVideos => [newVideo, ...prevVideos]);
   };
 
   const formatDuration = (seconds?: number): string => {
@@ -169,6 +166,12 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
           />
         }
         ListEmptyComponent={renderEmptyState}
+      />
+
+      <AddVideoModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onVideoAdded={handleVideoAdded}
       />
     </View>
   );

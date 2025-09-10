@@ -25,7 +25,11 @@
       "Bash(npm install:*)",
       "Bash(taskkill:*)",
       "Bash(npm run lint)",
-      "Bash(npx serve:*)"
+      "Bash(npx serve:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.google.com)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []
