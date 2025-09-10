@@ -221,7 +221,7 @@ class MockDatabase {
         if (aPriority !== bPriority) return bPriority - aPriority;
         
         if (a.due_date && b.due_date) {
-          return a.due_date.getTime() - b.due_date.getTime();
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }
         if (a.due_date) return -1;
         if (b.due_date) return 1;

@@ -150,3 +150,44 @@ export interface TaskForm {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
 }
+
+// Additional Task API Types
+export interface CreateTaskData {
+  title: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  dueDate?: string;
+  memoId?: string;
+}
+
+export interface UpdateTaskData {
+  title?: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  dueDate?: string;
+}
+
+export interface TaskStats {
+  total: number;
+  pending: number;
+  in_progress: number;
+  completed: number;
+  cancelled: number;
+  overdue: number;
+}
+
+// Pagination Types
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}

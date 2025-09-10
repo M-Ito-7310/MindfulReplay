@@ -19,6 +19,14 @@ export const API_CONFIG = {
     // Task endpoints
     TASKS: '/api/tasks',
     TASK_DETAIL: (id: string) => `/api/tasks/${id}`,
+    TASK_STATS: '/api/tasks/stats',
+    TASK_OVERDUE: '/api/tasks/overdue',
+    TASK_UPCOMING: '/api/tasks/upcoming',
+    TASK_DASHBOARD: '/api/tasks/dashboard',
+    TASK_SEARCH: '/api/tasks/search',
+    TASK_COMPLETE: (id: string) => `/api/tasks/${id}/complete`,
+    TASK_REOPEN: (id: string) => `/api/tasks/${id}/reopen`,
+    TASK_FROM_MEMO: (memoId: string) => `/api/tasks/from-memo/${memoId}`,
     
     // Reminder endpoints
     REMINDERS: '/api/reminders',

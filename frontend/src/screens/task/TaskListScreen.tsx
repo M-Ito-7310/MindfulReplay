@@ -7,8 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { TaskList } from '@/components/task';
-import { apiService } from '@/services/api';
-import { API_CONFIG } from '@/constants/api';
+import { taskService } from '@/services/task';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { Task } from '@/types';
 
@@ -46,46 +45,30 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
     }
 
     try {
-      const params: any = {
+      const options: any = {
         page: pageNum,
         limit: 20,
       };
 
-      if (memoId) {
-        // If we have a memoId, fetch tasks for that specific memo
-        const response = await apiService.get(`${API_CONFIG.ENDPOINTS.MEMOS}/${memoId}/tasks`);
-        
-        if (response.success && response.data) {
-          const newTasks = response.data || [];
-          
-          if (isRefresh || pageNum === 1) {
-            setTasks(newTasks);
-          } else {
-            setTasks(prev => [...prev, ...newTasks]);
-          }
-          setHasMore(false); // Memo tasks are usually limited
-        }
+      if (filterStatus) options.status = filterStatus;
+      if (filterPriority) options.priority = filterPriority;
+
+      // Use new TaskService
+      const response = await taskService.getTasks(options);
+      
+      const newTasks = response.items || [];
+      
+      if (isRefresh || pageNum === 1) {
+        setTasks(newTasks);
       } else {
-        // Fetch all user tasks with filters
-        if (filterStatus) params.status = filterStatus;
-        if (filterPriority) params.priority = filterPriority;
-
-        const response = await apiService.get(API_CONFIG.ENDPOINTS.TASKS, { params });
-        
-        if (response.success && response.data) {
-          const newTasks = response.data.items || [];
-          
-          if (isRefresh || pageNum === 1) {
-            setTasks(newTasks);
-          } else {
-            setTasks(prev => [...prev, ...newTasks]);
-          }
-
-          setHasMore(response.data.pagination?.hasNext || false);
-          setPage(pageNum);
-        }
+        setTasks(prev => [...prev, ...newTasks]);
       }
+
+      setHasMore(response.pagination?.hasNext || false);
+      setPage(pageNum);
+
     } catch (error) {
+      console.error('Error loading tasks:', error);
       Alert.alert(
         'エラー',
         'タスクの読み込みに失敗しました'
@@ -120,19 +103,22 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
 
   const handleTaskComplete = async (task: Task) => {
     try {
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      const response = await apiService.put(`${API_CONFIG.ENDPOINTS.TASK_DETAIL(task.id)}`, {
-        status: newStatus
-      });
+      let updatedTask: Task;
       
-      if (response.success) {
-        setTasks(prev => prev.map(t => 
-          t.id === task.id 
-            ? { ...t, status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : undefined }
-            : t
-        ));
+      if (task.status === 'completed') {
+        // Reopen the task
+        updatedTask = await taskService.reopenTask(task.id);
+      } else {
+        // Complete the task
+        updatedTask = await taskService.completeTask(task.id);
       }
+      
+      // Update local state
+      setTasks(prev => prev.map(t => 
+        t.id === task.id ? updatedTask : t
+      ));
     } catch (error) {
+      console.error('Error updating task status:', error);
       Alert.alert('エラー', 'タスクの更新に失敗しました');
     }
   };
@@ -157,13 +143,11 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
 
   const deleteTask = async (taskId: string) => {
     try {
-      const response = await apiService.delete(API_CONFIG.ENDPOINTS.TASK_DETAIL(taskId));
-      
-      if (response.success) {
-        setTasks(prev => prev.filter(task => task.id !== taskId));
-        Alert.alert('成功', 'タスクを削除しました');
-      }
+      await taskService.deleteTask(taskId);
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      Alert.alert('成功', 'タスクを削除しました');
     } catch (error) {
+      console.error('Error deleting task:', error);
       Alert.alert('エラー', 'タスクの削除に失敗しました');
     }
   };
