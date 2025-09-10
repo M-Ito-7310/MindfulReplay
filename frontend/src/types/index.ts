@@ -98,9 +98,38 @@ export interface Memo {
   video_id: string;
   content: string;
   timestamp_sec?: number;
+  memo_type?: 'insight' | 'action' | 'question' | 'summary';
+  importance?: 1 | 2 | 3 | 4 | 5;
   created_at: string;
   updated_at: string;
   tags?: Tag[];
+}
+
+// Viewing Session Types
+export interface ViewingSession {
+  id: string;
+  user_id: string;
+  video_id: string;
+  watch_duration: number;
+  pause_count: number;
+  rewind_count: number;
+  engagement_level?: 1 | 2 | 3 | 4 | 5;
+  created_at: string;
+  completed_at?: string;
+}
+
+// Review Schedule Types
+export interface ReviewSchedule {
+  id: string;
+  user_id: string;
+  memo_id: string;
+  video_id: string;
+  scheduled_at: string;
+  completed_at?: string;
+  difficulty_rating?: 1 | 2 | 3 | 4 | 5;
+  retention_score?: 1 | 2 | 3 | 4 | 5;
+  next_review_at?: string;
+  created_at: string;
 }
 
 // Tag Types
@@ -177,6 +206,8 @@ export interface VideoForm {
 export interface MemoForm {
   content: string;
   timestamp_sec?: number;
+  memo_type?: 'insight' | 'action' | 'question' | 'summary';
+  importance?: 1 | 2 | 3 | 4 | 5;
   tag_ids?: string[];
 }
 
@@ -185,6 +216,17 @@ export interface TaskForm {
   description?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
+}
+
+// Viewing Forms  
+export interface ViewingSessionForm {
+  engagement_level?: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface ReviewSessionForm {
+  difficulty_rating: 1 | 2 | 3 | 4 | 5;
+  retention_score: 1 | 2 | 3 | 4 | 5;
+  notes?: string;
 }
 
 // Additional Task API Types

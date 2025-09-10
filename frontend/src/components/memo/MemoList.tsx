@@ -19,6 +19,7 @@ interface MemoListProps {
   onMemoPress?: (memo: Memo) => void;
   onMemoEdit?: (memo: Memo) => void;
   onMemoDelete?: (memo: Memo) => void;
+  onMemoConvertToTask?: (memo: Memo) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
   emptyTitle?: string;
@@ -35,6 +36,7 @@ export const MemoList: React.FC<MemoListProps> = ({
   onMemoPress,
   onMemoEdit,
   onMemoDelete,
+  onMemoConvertToTask,
   onLoadMore,
   hasMore = false,
   emptyTitle = 'メモがありません',
@@ -48,6 +50,7 @@ export const MemoList: React.FC<MemoListProps> = ({
       onPress={onMemoPress ? () => onMemoPress(item) : undefined}
       onEdit={onMemoEdit ? () => onMemoEdit(item) : undefined}
       onDelete={onMemoDelete ? () => onMemoDelete(item) : undefined}
+      onConvertToTask={onMemoConvertToTask ? () => onMemoConvertToTask(item) : undefined}
       showActions={showActions}
     />
   );
@@ -73,7 +76,7 @@ export const MemoList: React.FC<MemoListProps> = ({
       <View style={styles.footer}>
         <Button
           title="さらに読み込む"
-          onPress={onLoadMore}
+          onPress={onLoadMore || (() => {})}
           variant="outline"
           size="small"
           loading={isLoading}

@@ -7,10 +7,15 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { DashboardScreen } from './dashboard/DashboardScreen';
 import { VideoListScreen } from './video/VideoListScreen';
 import { VideoPlayerScreen } from './video/VideoPlayerScreen';
 import { MemoListScreen } from './memo/MemoListScreen';
+import { MemoCreateScreen } from './memo/MemoCreateScreen';
+import { MemoEditScreen } from './memo/MemoEditScreen';
 import { TaskListScreen } from './task/TaskListScreen';
+import { TaskCreateScreen } from './task/TaskCreateScreen';
+import { TaskEditScreen } from './task/TaskEditScreen';
 import { authService } from '@/services/auth';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 
@@ -19,8 +24,8 @@ interface MainScreenProps {
   onLogout?: () => void;
 }
 
-type TabType = 'videos' | 'memos' | 'tasks';
-type ScreenType = 'main' | 'video-player';
+type TabType = 'dashboard' | 'videos' | 'memos' | 'tasks';
+type ScreenType = 'main' | 'video-player' | 'memo-create' | 'memo-edit' | 'task-create' | 'task-edit';
 
 interface ScreenState {
   type: ScreenType;
@@ -28,10 +33,11 @@ interface ScreenState {
 }
 
 export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [screenState, setScreenState] = useState<ScreenState>({ type: 'main' });
 
   const tabs = [
+    { id: 'dashboard' as TabType, label: 'ホーム', icon: '🏠' },
     { id: 'videos' as TabType, label: '動画', icon: '📹' },
     { id: 'memos' as TabType, label: 'メモ', icon: '📝' },
     { id: 'tasks' as TabType, label: 'タスク', icon: '✅' },
@@ -46,13 +52,16 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
           setScreenState({ type: 'video-player', params });
           break;
         case 'MemoCreate':
+          setScreenState({ type: 'memo-create', params });
+          break;
         case 'MemoEdit':
+          setScreenState({ type: 'memo-edit', params });
+          break;
         case 'TaskCreate':
+          setScreenState({ type: 'task-create', params });
+          break;
         case 'TaskEdit':
-          // For now, we'll just log these navigation requests
-          // In a full React Navigation setup, these would work properly
-          console.log(`Navigate to ${screen}`, params);
-          // You can implement screen transitions here
+          setScreenState({ type: 'task-edit', params });
           break;
         default:
           navigation?.navigate?.(screen, params);
@@ -108,6 +117,8 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return <DashboardScreen navigation={enhancedNavigation} />;
       case 'videos':
         return <VideoListScreen navigation={enhancedNavigation} />;
       case 'memos':
@@ -115,7 +126,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
       case 'tasks':
         return <TaskListScreen navigation={enhancedNavigation} />;
       default:
-        return <VideoListScreen navigation={enhancedNavigation} />;
+        return <DashboardScreen navigation={enhancedNavigation} />;
     }
   };
 
@@ -145,6 +156,50 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
     return (
       <View style={styles.container}>
         <VideoPlayerScreen 
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
+  if (screenState.type === 'memo-create') {
+    return (
+      <View style={styles.container}>
+        <MemoCreateScreen 
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
+  if (screenState.type === 'memo-edit') {
+    return (
+      <View style={styles.container}>
+        <MemoEditScreen 
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
+  if (screenState.type === 'task-create') {
+    return (
+      <View style={styles.container}>
+        <TaskCreateScreen 
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
+  if (screenState.type === 'task-edit') {
+    return (
+      <View style={styles.container}>
+        <TaskEditScreen 
           navigation={enhancedNavigation}
           route={{ params: screenState.params }}
         />

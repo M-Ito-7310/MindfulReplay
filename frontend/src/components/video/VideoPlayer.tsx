@@ -18,6 +18,7 @@ interface VideoPlayerProps {
   onMemoPress?: (memo: Memo) => void;
   onMemoEdit?: (memo: Memo) => void;
   onMemoDelete?: (memo: Memo) => void;
+  onMemoConvertToTask?: (memo: Memo) => void;
   onAddMemo?: (timestamp?: number) => void;
   onRefreshMemos?: () => void;
   isRefreshingMemos?: boolean;
@@ -29,6 +30,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onMemoPress,
   onMemoEdit,
   onMemoDelete,
+  onMemoConvertToTask,
   onAddMemo,
   onRefreshMemos,
   isRefreshingMemos = false,
@@ -185,6 +187,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   onMemoPress={onMemoPress}
                   onMemoEdit={onMemoEdit}
                   onMemoDelete={onMemoDelete}
+                  onMemoConvertToTask={onMemoConvertToTask}
                   emptyTitle="一般メモがありません"
                   emptySubtitle=""
                   showActions={true}

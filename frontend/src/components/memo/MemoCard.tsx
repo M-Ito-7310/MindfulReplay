@@ -13,6 +13,7 @@ interface MemoCardProps {
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onConvertToTask?: () => void;
   showActions?: boolean;
 }
 
@@ -21,6 +22,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({
   onPress,
   onEdit,
   onDelete,
+  onConvertToTask,
   showActions = true,
 }) => {
   const formatTimestamp = (seconds?: number): string => {
@@ -40,6 +42,21 @@ export const MemoCard: React.FC<MemoCardProps> = ({
     });
   };
 
+  const getMemoTypeIcon = (type?: 'insight' | 'action' | 'question' | 'summary'): string => {
+    switch (type) {
+      case 'insight': return '💡';
+      case 'action': return '🎯';
+      case 'question': return '❓';
+      case 'summary': return '📝';
+      default: return '📝';
+    }
+  };
+
+  const getImportanceStars = (importance?: 1 | 2 | 3 | 4 | 5): string => {
+    if (!importance) return '';
+    return '⭐'.repeat(importance);
+  };
+
   return (
     <TouchableOpacity
       style={styles.container}
@@ -48,16 +65,28 @@ export const MemoCard: React.FC<MemoCardProps> = ({
       disabled={!onPress}
     >
       <View style={styles.header}>
-        {memo.timestamp_sec && (
-          <View style={styles.timestampBadge}>
-            <Text style={styles.timestampText}>
-              {formatTimestamp(memo.timestamp_sec)}
+        <View style={styles.headerLeft}>
+          <Text style={styles.memoTypeIcon}>
+            {getMemoTypeIcon(memo.memo_type)}
+          </Text>
+          {memo.timestamp_sec && (
+            <View style={styles.timestampBadge}>
+              <Text style={styles.timestampText}>
+                {formatTimestamp(memo.timestamp_sec)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerRight}>
+          {memo.importance && (
+            <Text style={styles.importanceText}>
+              {getImportanceStars(memo.importance)}
             </Text>
-          </View>
-        )}
-        <Text style={styles.dateText}>
-          {formatDate(memo.created_at)}
-        </Text>
+          )}
+          <Text style={styles.dateText}>
+            {formatDate(memo.created_at)}
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.content} numberOfLines={4}>
@@ -77,8 +106,17 @@ export const MemoCard: React.FC<MemoCardProps> = ({
         </View>
       )}
 
-      {showActions && (onEdit || onDelete) && (
+      {showActions && (onEdit || onDelete || onConvertToTask) && (
         <View style={styles.actions}>
+          {onConvertToTask && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={onConvertToTask}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.convertTaskText}>タスク化</Text>
+            </TouchableOpacity>
+          )}
           {onEdit && (
             <TouchableOpacity
               style={styles.actionButton}
@@ -114,8 +152,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: SPACING.SM,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  memoTypeIcon: {
+    fontSize: 16,
+    marginRight: SPACING.SM,
   },
   timestampBadge: {
     backgroundColor: COLORS.PRIMARY,
@@ -127,6 +177,10 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: TYPOGRAPHY.FONT_SIZE.XS,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+  },
+  importanceText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.XS,
+    marginBottom: SPACING.XS,
   },
   dateText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.XS,
@@ -179,5 +233,10 @@ const styles = StyleSheet.create({
   deleteButton: {},
   deleteText: {
     color: COLORS.ERROR,
+  },
+  convertTaskText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
+    color: COLORS.SUCCESS,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
 });

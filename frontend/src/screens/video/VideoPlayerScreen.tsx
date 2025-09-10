@@ -154,6 +154,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
     }
   };
 
+  const handleConvertToTask = (memo: Memo) => {
+    if (navigation) {
+      navigation.navigate('TaskCreate', { memoId: memo.id });
+    }
+  };
+
   // Note: In this custom navigation implementation, we don't need focus listeners
   // Memos will be refreshed when the component mounts
 
@@ -197,6 +203,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
         onMemoPress={handleMemoPress}
         onMemoEdit={handleMemoEdit}
         onMemoDelete={handleMemoDelete}
+        onMemoConvertToTask={handleConvertToTask}
         onAddMemo={handleAddMemo}
         onRefreshMemos={handleRefreshMemos}
         isRefreshingMemos={isRefreshingMemos}

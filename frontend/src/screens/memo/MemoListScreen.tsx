@@ -137,6 +137,12 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
     }
   };
 
+  const handleConvertToTask = (memo: Memo) => {
+    if (navigation) {
+      navigation.navigate('TaskCreate', { memoId: memo.id });
+    }
+  };
+
   const getTitle = () => {
     return videoId ? '動画のメモ' : 'すべてのメモ';
   };
@@ -168,6 +174,7 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
         onMemoPress={handleMemoPress}
         onMemoEdit={handleMemoEdit}
         onMemoDelete={handleMemoDelete}
+        onMemoConvertToTask={handleConvertToTask}
         onLoadMore={handleLoadMore}
         hasMore={hasMore}
         emptyTitle={getEmptyTitle()}

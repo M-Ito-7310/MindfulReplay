@@ -28,19 +28,20 @@ export const MemoCreateScreen: React.FC<MemoCreateScreenProps> = ({ navigation, 
   const initialTimestamp = route?.params?.timestamp;
 
   const handleSubmit = async (data: MemoForm) => {
-    if (!videoId) {
-      Alert.alert('エラー', '動画が選択されていません');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const response = await apiService.post(API_CONFIG.ENDPOINTS.MEMOS, {
-        videoId,
+      const requestData: any = {
         content: data.content,
-        timestampSeconds: data.timestamp_sec,
-      });
+      };
+
+      // videoIdがある場合のみ追加
+      if (videoId) {
+        requestData.videoId = videoId;
+        requestData.timestampSeconds = data.timestamp_sec;
+      }
+
+      const response = await apiService.post(API_CONFIG.ENDPOINTS.MEMOS, requestData);
 
       if (response.success) {
         Alert.alert(
@@ -82,6 +83,7 @@ export const MemoCreateScreen: React.FC<MemoCreateScreenProps> = ({ navigation, 
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isLoading={isLoading}
+        showTimestamp={!!videoId}
       />
     </View>
   );
