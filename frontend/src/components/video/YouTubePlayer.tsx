@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { COLORS } from '@/constants/theme';
@@ -20,7 +21,7 @@ interface YouTubePlayerProps {
   height?: number;
 }
 
-export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
+export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   videoId,
   initialTime = 0,
   onReady,
@@ -30,7 +31,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   autoplay = false,
   width,
   height,
-}) => {
+}, ref) => {
   const webViewRef = useRef<WebView>(null);
   const [isReady, setIsReady] = useState(false);
   const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -265,13 +266,40 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   const getCurrentTime = () => sendMessage({ type: 'getCurrentTime' });
 
   // Expose methods via ref
-  React.useImperativeHandle(webViewRef, () => ({
+  React.useImperativeHandle(ref, () => ({
     play,
     pause,
     seekTo,
     getCurrentTime,
   }));
 
+  // Web platform implementation using iframe
+  if (Platform.OS === 'web') {
+    const cleanVideoId = extractVideoId(videoId);
+    const iframeSrc = `https://www.youtube.com/embed/${cleanVideoId}?enablejsapi=1&autoplay=${autoplay ? 1 : 0}&start=${initialTime}&controls=1&modestbranding=1&rel=0`;
+    
+    return (
+      <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
+        <iframe
+          src={iframeSrc}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            backgroundColor: COLORS.BLACK,
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          onLoad={() => {
+            setIsReady(true);
+            onReady?.();
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Mobile implementation using WebView
   return (
     <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
       <WebView
@@ -294,7 +322,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       />
     </View>
   );
-};
+});
+
+// Add display name for better debugging
+YouTubePlayer.displayName = 'YouTubePlayer';
 
 const styles = StyleSheet.create({
   container: {

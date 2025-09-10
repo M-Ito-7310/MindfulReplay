@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   Alert,
   SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { VideoPlayer } from '@/components/video';
 import { apiService } from '@/services/api';
@@ -152,17 +154,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
     }
   };
 
-  // Handle navigation back from memo creation/editing
-  useEffect(() => {
-    const unsubscribe = navigation?.addListener('focus', () => {
-      // Refresh memos when returning to this screen
-      if (videoId) {
-        loadMemos(true);
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, videoId]);
+  // Note: In this custom navigation implementation, we don't need focus listeners
+  // Memos will be refreshed when the component mounts
 
   if (isLoadingVideo) {
     return (
@@ -186,6 +179,18 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation?.goBack?.()}
+        >
+          <Text style={styles.backButtonText}>← 戻る</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>動画視聴</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <VideoPlayer
         video={video}
         memos={memos}
@@ -204,6 +209,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.WHITE,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.GRAY_200,
+    elevation: 2,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  backButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: COLORS.PRIMARY,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 60, // Same width as back button to center the title
   },
   loadingContainer: {
     flex: 1,

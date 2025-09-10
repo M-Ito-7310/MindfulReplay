@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { VideoListScreen } from './video/VideoListScreen';
+import { VideoPlayerScreen } from './video/VideoPlayerScreen';
 import { MemoListScreen } from './memo/MemoListScreen';
 import { TaskListScreen } from './task/TaskListScreen';
 import { authService } from '@/services/auth';
@@ -19,9 +20,16 @@ interface MainScreenProps {
 }
 
 type TabType = 'videos' | 'memos' | 'tasks';
+type ScreenType = 'main' | 'video-player';
+
+interface ScreenState {
+  type: ScreenType;
+  params?: any;
+}
 
 export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) => {
   const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [screenState, setScreenState] = useState<ScreenState>({ type: 'main' });
 
   const tabs = [
     { id: 'videos' as TabType, label: '動画', icon: '📹' },
@@ -35,6 +43,8 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
       // Handle different screen types
       switch (screen) {
         case 'VideoPlayer':
+          setScreenState({ type: 'video-player', params });
+          break;
         case 'MemoCreate':
         case 'MemoEdit':
         case 'TaskCreate':
@@ -50,7 +60,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
     },
     goBack: () => {
       // Handle back navigation within tab content
-      console.log('Go back');
+      setScreenState({ type: 'main' });
     }
   };
 
@@ -130,6 +140,19 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
     </TouchableOpacity>
   );
 
+  // Render different screens based on state
+  if (screenState.type === 'video-player') {
+    return (
+      <View style={styles.container}>
+        <VideoPlayerScreen 
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
+  // Default main screen with tabs
   return (
     <View style={styles.container}>
       {/* Header */}
