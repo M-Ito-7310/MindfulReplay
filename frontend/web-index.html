@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindfulReplay - Development</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 1rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .service {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .service-name {
+            font-weight: 600;
+        }
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .badge.running {
+            background: #10b981;
+            color: white;
+        }
+        .badge.stopped {
+            background: #ef4444;
+            color: white;
+        }
+        .badge.checking {
+            background: #f59e0b;
+            color: white;
+        }
+        .info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            text-align: left;
+        }
+        .info h3 {
+            margin-bottom: 0.5rem;
+        }
+        .info p {
+            margin: 0.5rem 0;
+            opacity: 0.9;
+        }
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 MindfulReplay</h1>
+        <p style="font-size: 1.2rem; opacity: 0.9;">Development Dashboard</p>
+        
+        <div class="status">
+            <div class="service">
+                <span class="service-name">Backend API</span>
+                <span id="backend-status" class="badge checking">Checking...</span>
+            </div>
+            <div class="service">
+                <span class="service-name">Frontend (Expo)</span>
+                <span id="frontend-status" class="badge checking">Checking...</span>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>📱 React Native App Testing</h3>
+            <p><strong>Expo Go App:</strong> QRコードをスキャンしてテスト</p>
+            <p><strong>Web版:</strong> Expo SDK 51ではWeb表示に制限があります</p>
+            <p><strong>推奨:</strong> Expo Goアプリまたはエミュレータを使用</p>
+        </div>
+
+        <div class="info">
+            <h3>🚀 API Endpoints</h3>
+            <p><strong>Backend:</strong> <code>http://localhost:4000</code></p>
+            <p><strong>Health Check:</strong> <code>/health</code></p>
+            <p><strong>Auth:</strong> <code>/api/auth/login</code></p>
+            <p><strong>Tasks:</strong> <code>/api/tasks</code></p>
+        </div>
+
+        <div class="actions">
+            <a href="http://localhost:4000/health" target="_blank" class="btn">Check Backend</a>
+            <button onclick="testAPI()" class="btn">Test API</button>
+            <button onclick="location.reload()" class="btn">Refresh Status</button>
+        </div>
+    </div>
+
+    <script>
+        // Check backend status
+        async function checkBackend() {
+            try {
+                const response = await fetch('http://localhost:4000/health');
+                if (response.ok) {
+                    document.getElementById('backend-status').textContent = 'Running';
+                    document.getElementById('backend-status').className = 'badge running';
+                } else {
+                    throw new Error('Not running');
+                }
+            } catch (error) {
+                document.getElementById('backend-status').textContent = 'Stopped';
+                document.getElementById('backend-status').className = 'badge stopped';
+            }
+        }
+
+        // Check frontend status
+        async function checkFrontend() {
+            try {
+                const response = await fetch('http://localhost:8081', { mode: 'no-cors' });
+                document.getElementById('frontend-status').textContent = 'Running';
+                document.getElementById('frontend-status').className = 'badge running';
+            } catch (error) {
+                document.getElementById('frontend-status').textContent = 'Limited';
+                document.getElementById('frontend-status').className = 'badge stopped';
+            }
+        }
+
+        // Test API
+        async function testAPI() {
+            try {
+                const response = await fetch('http://localhost:4000/health');
+                const data = await response.json();
+                alert('Backend API is working!\n\n' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                alert('Backend API is not accessible.\n\nError: ' + error.message);
+            }
+        }
+
+        // Check status on load
+        window.addEventListener('load', () => {
+            checkBackend();
+            checkFrontend();
+        });
+
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            checkBackend();
+            checkFrontend();
+        }, 5000);
+    </script>
+</body>
+</html>

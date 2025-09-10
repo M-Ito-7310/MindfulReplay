@@ -24,7 +24,8 @@
       "Bash(npx expo install:*)",
       "Bash(npm install:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npx serve:*)"
     ],
     "deny": [],
     "ask": []
