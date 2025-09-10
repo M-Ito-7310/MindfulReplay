@@ -10,3 +10,11 @@ export { VideoPlayerScreen } from './video/VideoPlayerScreen';
 export { MemoListScreen } from './memo/MemoListScreen';
 export { MemoCreateScreen } from './memo/MemoCreateScreen';
 export { MemoEditScreen } from './memo/MemoEditScreen';
+
+// Task screens
+export { TaskListScreen } from './task/TaskListScreen';
+export { TaskCreateScreen } from './task/TaskCreateScreen';
+export { TaskEditScreen } from './task/TaskEditScreen';
+
+// Main screen
+export { MainScreen } from './MainScreen';

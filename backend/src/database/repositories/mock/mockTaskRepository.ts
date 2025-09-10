@@ -1,6 +1,7 @@
 import { TaskRepository, Task, CreateTaskData, UpdateTaskData } from '../taskRepository';
 import { ListResponse, QueryOptions } from '../baseRepository';
 import { mockDb } from '../../mockDatabase';
+import { getMemoRepository } from '../index';
 
 export class MockTaskRepository implements TaskRepository {
   async create(data: CreateTaskData): Promise<Task> {
@@ -230,6 +231,39 @@ export class MockTaskRepository implements TaskRepository {
 
     return {
       data: upcomingTasks,
+      total,
+      limit: options?.limit,
+      offset: options?.offset
+    };
+  }
+
+  async findByVideoId(userId: string, videoId: string, options?: QueryOptions): Promise<ListResponse<Task>> {
+    const memoRepo = getMemoRepository();
+    
+    // First, find all memos for this video that belong to the user
+    const memosResult = await memoRepo.findByVideoId(userId, videoId, { limit: 1000 });
+    const memoIds = memosResult.data.map(memo => memo.id);
+    
+    // Then find all tasks that are linked to any of these memos
+    let userTasks = mockDb.getTasksByUserId(userId);
+    let videoTasks = userTasks.filter(task => 
+      task.memo_id && memoIds.includes(task.memo_id)
+    );
+    
+    // Sort by creation date (newest first)
+    videoTasks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+    
+    // Apply pagination
+    const total = videoTasks.length;
+    if (options?.offset) {
+      videoTasks = videoTasks.slice(options.offset);
+    }
+    if (options?.limit) {
+      videoTasks = videoTasks.slice(0, options.limit);
+    }
+
+    return {
+      data: videoTasks,
       total,
       limit: options?.limit,
       offset: options?.offset

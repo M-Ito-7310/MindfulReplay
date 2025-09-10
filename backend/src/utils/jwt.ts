@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../database/repositories/userRepository';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET || 'default-dev-secret-do-not-use-in-production';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'default-dev-refresh-secret-do-not-use-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 

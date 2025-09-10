@@ -50,6 +50,10 @@ export class TaskService {
       status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
       priority?: 'low' | 'medium' | 'high' | 'urgent';
       search?: string;
+      sort?: 'created_at' | 'updated_at' | 'due_date' | 'priority';
+      order?: 'asc' | 'desc';
+      videoId?: string;
+      overdue?: boolean;
     } = {}
   ): Promise<PaginatedResponse<Task>> {
     const taskRepo = getTaskRepository();
@@ -58,12 +62,16 @@ export class TaskService {
     const offset = (page - 1) * limit;
 
     let result;
-    if (options.status) {
+    if (options.overdue) {
+      result = await taskRepo.getOverdueTasks(userId, { limit, offset });
+    } else if (options.status) {
       result = await taskRepo.findByStatus(userId, options.status, { limit, offset });
     } else if (options.priority) {
       result = await taskRepo.findByPriority(userId, options.priority, { limit, offset });
     } else if (options.search) {
       result = await taskRepo.searchByTitle(userId, options.search, { limit, offset });
+    } else if (options.videoId) {
+      result = await taskRepo.findByVideoId(userId, options.videoId, { limit, offset });
     } else {
       result = await taskRepo.findByUserId(userId, { limit, offset });
     }

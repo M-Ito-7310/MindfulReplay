@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, SafeAreaView } from 'react-native';
-import { LoginScreen, SignupScreen, VideoListScreen } from '@/screens';
+import { LoginScreen, SignupScreen, MainScreen } from '@/screens';
 import { authService } from '@/services/auth';
 
 type AppScreen = 'Login' | 'Signup' | 'Main';
@@ -49,7 +49,7 @@ export default function App() {
           />
         );
       case 'Main':
-        return <VideoListScreen navigation={navigation} />;
+        return <MainScreen navigation={navigation} />;
       default:
         return (
           <LoginScreen 

@@ -36,6 +36,7 @@ export interface UpdateTaskData {
 export interface TaskRepository extends BaseRepository<Task, CreateTaskData, UpdateTaskData> {
   findByUserId(userId: string, options?: QueryOptions): Promise<ListResponse<Task>>;
   findByMemoId(memoId: string, options?: QueryOptions): Promise<ListResponse<Task>>;
+  findByVideoId(userId: string, videoId: string, options?: QueryOptions): Promise<ListResponse<Task>>;
   findByStatus(userId: string, status: Task['status'], options?: QueryOptions): Promise<ListResponse<Task>>;
   findByPriority(userId: string, priority: Task['priority'], options?: QueryOptions): Promise<ListResponse<Task>>;
   searchByTitle(userId: string, query: string, options?: QueryOptions): Promise<ListResponse<Task>>;

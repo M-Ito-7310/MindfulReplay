@@ -113,7 +113,8 @@ export type RootStackParamList = {
   VideoPlayer: { videoId: string };
   MemoCreate: { videoId: string; timestamp?: number };
   MemoEdit: { memoId: string };
-  TaskList: undefined;
+  MemoList: { videoId?: string };
+  TaskList: { memoId?: string; status?: Task['status']; priority?: Task['priority'] };
   TaskCreate: { memoId?: string };
   TaskEdit: { taskId: string };
   Profile: undefined;
