@@ -43,6 +43,13 @@ const getApiBaseUrl = (): string => {
 const createApiConfig = () => {
   const baseUrl = getApiBaseUrl();
   console.log('[API Config] Final BASE_URL:', baseUrl);
+  console.log('[API Config] Environment detection:', {
+    hasWindow: typeof window !== 'undefined',
+    isReactNative: typeof navigator !== 'undefined' && navigator.product === 'ReactNative',
+    hasProcess: typeof process !== 'undefined',
+    apiUrlConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL),
+    devIpConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_DEV_IP),
+  });
   return {
     BASE_URL: baseUrl,
     ENDPOINTS: {

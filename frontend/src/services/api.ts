@@ -6,6 +6,8 @@ import { localStorageService } from './localStorageService';
 class ApiService {
   private baseURL: string;
   private timeout: number;
+  private backendAvailable: boolean | null = null;
+  private connectionTested: boolean = false;
 
   constructor() {
     this.baseURL = API_CONFIG.BASE_URL;
@@ -101,8 +103,10 @@ class ApiService {
 
   // GET request
   async get<T>(endpoint: string, options?: { params?: any }): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints on native platforms
-    if (this.shouldUseLocalStorage(endpoint)) {
+    // Dynamic API selection based on backend availability
+    const useBackend = await this.shouldUseBackendAPI(endpoint);
+    
+    if (!useBackend) {
       console.log(`[API] Using local storage for endpoint: ${endpoint}`);
       try {
         const result = await this.handleLocalStorageGet<T>(endpoint, options);
@@ -114,25 +118,37 @@ class ApiService {
       }
     }
     
-    // Make API request without fallback
+    // Make API request with local storage fallback
     console.log(`[API] Making network request to: ${this.baseURL}${endpoint}`);
-    return await this.request<T>(endpoint, { method: 'GET' });
+    try {
+      return await this.request<T>(endpoint, { method: 'GET' });
+    } catch (error) {
+      console.error(`[API] Network request failed, attempting local storage fallback`);
+      return await this.handleLocalStorageGet<T>(endpoint, options);
+    }
   }
 
   // POST request
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints on native platforms
-    if (this.shouldUseLocalStorage(endpoint)) {
+    // Dynamic API selection based on backend availability
+    const useBackend = await this.shouldUseBackendAPI(endpoint);
+    
+    if (!useBackend) {
       console.log(`[API] Using local storage POST for endpoint: ${endpoint}`, data);
       return this.handleLocalStoragePost<T>(endpoint, data);
     }
     
-    // Make API request without fallback
+    // Make API request with local storage fallback
     console.log(`[API] Making network POST request to: ${this.baseURL}${endpoint}`, data);
-    return await this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    try {
+      return await this.request<T>(endpoint, {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      });
+    } catch (error) {
+      console.error(`[API] Network POST failed, attempting local storage fallback`);
+      return await this.handleLocalStoragePost<T>(endpoint, data);
+    }
   }
 
   // PUT request
@@ -164,7 +180,13 @@ class ApiService {
 
   // Check if endpoint should use local storage
   private shouldUseLocalStorage(endpoint: string): boolean {
-    // Native platforms always use local storage for all endpoints
+    // Check if API URL is configured for backend communication
+    if (this.hasApiUrlConfigured()) {
+      console.log('[API] API URL configured, attempting backend communication first');
+      return false; // Try backend first
+    }
+    
+    // If no API URL configured, use local storage for native platforms
     if (this.isNativePlatform()) {
       const localEndpoints = [
         API_CONFIG.ENDPOINTS.VIDEOS,
@@ -180,7 +202,6 @@ class ApiService {
     }
     
     // Web platforms should try backend first and use local storage as fallback
-    // Only use local storage immediately for specific cases (when explicitly needed)
     return false;
   }
 
@@ -188,6 +209,37 @@ class ApiService {
   private isNativePlatform(): boolean {
     return typeof window === 'undefined' || 
            (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+  }
+
+  // Check if API URL is configured for backend communication
+  private hasApiUrlConfigured(): boolean {
+    return !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL);
+  }
+
+  // Dynamic API selection: determine whether to use backend or local storage
+  private async shouldUseBackendAPI(endpoint: string): Promise<boolean> {
+    // Always use local storage if no API URL is configured
+    if (!this.hasApiUrlConfigured()) {
+      console.log('[API] No API URL configured, using local storage');
+      return false;
+    }
+
+    // Test backend connection if not tested yet
+    if (!this.connectionTested) {
+      console.log('[API] Testing backend connection...');
+      const connectionResult = await this.testConnection();
+      this.backendAvailable = connectionResult.success;
+      this.connectionTested = true;
+      
+      if (this.backendAvailable) {
+        console.log(`[API] Backend available (${connectionResult.latency}ms)`);
+      } else {
+        console.log(`[API] Backend unavailable: ${connectionResult.error}`);
+      }
+    }
+
+    // Use backend if available
+    return this.backendAvailable === true;
   }
 
   // Check if backend server is available (Web only)
@@ -287,9 +339,15 @@ class ApiService {
       return localStorageService.createTask(data) as Promise<ApiResponse<T>>;
     }
 
-    // Handle authentication endpoints (native platforms only)
+    // Handle authentication endpoints
     if (endpoint.includes(API_CONFIG.ENDPOINTS.LOGIN)) {
-      console.log('[API] Login endpoint called in local storage mode');
+      console.log('[API] Login endpoint called in local storage mode - checking backend availability');
+      
+      // If backend API is configured and available, this shouldn't reach here
+      if (this.hasApiUrlConfigured() && this.backendAvailable) {
+        console.error('[API] Backend available but login routed to local storage - this is a bug');
+      }
+      
       return {
         success: false,
         error: {
@@ -397,6 +455,73 @@ class ApiService {
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getAuthToken();
     return !!token;
+  }
+
+  // Test backend connectivity
+  async testConnection(): Promise<{ success: boolean; error?: string; latency?: number }> {
+    const startTime = Date.now();
+    // Health endpoint is at root level, not under /api
+    const healthUrl = this.baseURL.replace('/api', '') + '/health';
+    
+    try {
+      console.log(`[API] Testing connection to backend health: ${healthUrl}`);
+      console.log(`[API] Environment info:`, {
+        hasApiUrl: this.hasApiUrlConfigured(),
+        isNative: this.isNativePlatform(),
+        baseURL: this.baseURL,
+        healthUrl: healthUrl,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
+      });
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        headers: API_HEADERS,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const latency = Date.now() - startTime;
+      
+      // Health endpoint returns simple JSON response
+      if (data && data.status === 'healthy') {
+        console.log(`[API] Backend connection successful (${latency}ms)`);
+        console.log(`[API] Health response:`, data);
+        return { success: true, latency };
+      } else {
+        console.log('[API] Backend connection failed - unexpected health response');
+        console.log('[API] Health response data:', data);
+        return { success: false, error: 'Health check failed - unexpected response' };
+      }
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      console.error(`[API] Backend connection error (${latency}ms):`, error);
+      console.error(`[API] Connection details:`, {
+        url: healthUrl,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+      });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown connection error',
+        latency
+      };
+    }
+  }
+
+  // Reset connection test (for debugging)
+  resetConnectionTest(): void {
+    this.connectionTested = false;
+    this.backendAvailable = null;
+    console.log('[API] Connection test reset - will re-test on next API call');
   }
 }
 
