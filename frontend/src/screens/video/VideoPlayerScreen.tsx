@@ -46,7 +46,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
       const response = await apiService.get(`${API_CONFIG.ENDPOINTS.VIDEOS}/${videoId}`);
       
       if (response.success && response.data) {
-        setVideo(response.data.video);
+        setVideo(response.data);
       }
     } catch (error) {
       Alert.alert(
@@ -93,7 +93,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
         Alert.alert('エラー', 'メモの読み込みに失敗しました');
       }
     } finally {
-      setIsLoadingVideo(false);
+      setIsLoadingMemos(false);
       setIsRefreshingMemos(false);
     }
   };
