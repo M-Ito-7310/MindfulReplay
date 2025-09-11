@@ -9,8 +9,15 @@ class LocalStorageService {
 
   async initialize() {
     if (!this.initialized) {
-      await database.seedData();
-      this.initialized = true;
+      console.log('[LocalStorage] Initializing database...');
+      try {
+        await database.seedData();
+        this.initialized = true;
+        console.log('[LocalStorage] Database initialized successfully');
+      } catch (error) {
+        console.error('[LocalStorage] Database initialization failed:', error);
+        throw error;
+      }
     }
   }
 

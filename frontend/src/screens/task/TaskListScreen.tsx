@@ -125,51 +125,32 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
   };
 
   const handleTaskDelete = async (task: Task) => {
-    if (Platform.OS === 'web') {
-      // Web環境ではwindow.confirmを使用
-      const confirmed = window.confirm('このタスクを削除しますか？');
-      
-      if (confirmed) {
-        deleteTask(task.id);
-      }
-    } else {
-      // ネイティブ環境ではAlert.alertを使用
-      Alert.alert(
-        'タスクを削除',
-        'このタスクを削除しますか？',
-        [
-          {
-            text: 'キャンセル',
-            style: 'cancel',
-          },
-          {
-            text: '削除',
-            style: 'destructive',
-            onPress: () => deleteTask(task.id),
-          },
-        ]
-      );
-    }
+    // 全プラットフォームでAlert.alertを使用
+    Alert.alert(
+      'タスクを削除',
+      'このタスクを削除しますか？',
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: () => deleteTask(task.id),
+        },
+      ]
+    );
   };
 
   const deleteTask = async (taskId: string) => {
     try {
       await taskService.deleteTask(taskId);
       setTasks(prev => prev.filter(task => task.id !== taskId));
-      
-      if (Platform.OS === 'web') {
-        window.alert('タスクを削除しました');
-      } else {
-        Alert.alert('成功', 'タスクを削除しました');
-      }
+      Alert.alert('成功', 'タスクを削除しました');
     } catch (error) {
       console.error('Error deleting task:', error);
-      
-      if (Platform.OS === 'web') {
-        window.alert('タスクの削除に失敗しました');
-      } else {
-        Alert.alert('エラー', 'タスクの削除に失敗しました');
-      }
+      Alert.alert('エラー', 'タスクの削除に失敗しました');
     }
   };
 

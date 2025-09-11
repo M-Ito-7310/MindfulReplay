@@ -101,31 +101,22 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
   };
 
   const handleMemoDelete = async (memo: Memo) => {
-    if (Platform.OS === 'web') {
-      // Web環境ではwindow.confirmを使用
-      const confirmed = window.confirm('このメモを削除しますか？');
-      
-      if (confirmed) {
-        deleteMemo(memo.id);
-      }
-    } else {
-      // ネイティブ環境ではAlert.alertを使用
-      Alert.alert(
-        'メモを削除',
-        'このメモを削除しますか？',
-        [
-          {
-            text: 'キャンセル',
-            style: 'cancel',
-          },
-          {
-            text: '削除',
-            style: 'destructive',
-            onPress: () => deleteMemo(memo.id),
-          },
-        ]
-      );
-    }
+    // 全プラットフォームでAlert.alertを使用
+    Alert.alert(
+      'メモを削除',
+      'このメモを削除しますか？',
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: () => deleteMemo(memo.id),
+        },
+      ]
+    );
   };
 
   const deleteMemo = async (memoId: string) => {
@@ -135,25 +126,12 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
       
       if (response.success) {
         setMemos(prev => prev.filter(memo => memo.id !== memoId));
-        
-        if (Platform.OS === 'web') {
-          window.alert('メモを削除しました');
-        } else {
-          Alert.alert('成功', 'メモを削除しました');
-        }
-      } else {
-        if (Platform.OS === 'web') {
-          window.alert('メモの削除に失敗しました');
-        } else {
-          Alert.alert('エラー', 'メモの削除に失敗しました');
-        }
-      }
-    } catch (error) {
-      if (Platform.OS === 'web') {
-        window.alert('メモの削除に失敗しました');
+        Alert.alert('成功', 'メモを削除しました');
       } else {
         Alert.alert('エラー', 'メモの削除に失敗しました');
       }
+    } catch (error) {
+      Alert.alert('エラー', 'メモの削除に失敗しました');
     }
   };
 

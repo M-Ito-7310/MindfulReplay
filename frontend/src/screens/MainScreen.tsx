@@ -99,20 +99,15 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
   };
 
   const confirmLogout = () => {
-    if (typeof window !== 'undefined') {
-      if (window.confirm('ログアウトしますか？')) {
-        handleLogout();
-      }
-    } else {
-      Alert.alert(
-        'ログアウト',
-        'ログアウトしますか？',
-        [
-          { text: 'キャンセル', style: 'cancel' },
-          { text: 'ログアウト', onPress: handleLogout, style: 'destructive' },
-        ]
-      );
-    }
+    // 全プラットフォームでAlert.alertを使用
+    Alert.alert(
+      'ログアウト',
+      'ログアウトしますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: 'ログアウト', onPress: handleLogout, style: 'destructive' },
+      ]
+    );
   };
 
   const renderTabContent = () => {

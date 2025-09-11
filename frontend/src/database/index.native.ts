@@ -1,4 +1,4 @@
 // Native-specific database export
-import { Database } from './database';
+import { NativeDatabase } from './nativeDatabase';
 
-export const database = Database.getInstance();
+export const database = NativeDatabase.getInstance();

@@ -3,7 +3,21 @@ let db: any = null;
 
 try {
   const SQLite = require('expo-sqlite');
-  db = SQLite.openDatabase('mindfulreplay.db');
+  // Expo SDK 54+ uses openDatabaseAsync
+  if (SQLite.openDatabaseAsync) {
+    console.log('[Database] Using new Expo SQLite API (SDK 54+)');
+    SQLite.openDatabaseAsync('mindfulreplay.db').then((database: any) => {
+      db = database;
+      console.log('[Database] SQLite database opened successfully');
+    }).catch((error: any) => {
+      console.error('[Database] Failed to open SQLite database:', error);
+    });
+  } else if (SQLite.openDatabase) {
+    console.log('[Database] Using legacy Expo SQLite API');
+    db = SQLite.openDatabase('mindfulreplay.db');
+  } else {
+    throw new Error('No compatible SQLite API found');
+  }
 } catch (error) {
   console.error('SQLite initialization failed:', error);
 }
