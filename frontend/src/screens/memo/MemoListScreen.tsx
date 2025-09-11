@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { MemoList } from '@/components/memo';
 import { apiService } from '@/services/api';
@@ -100,33 +101,79 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
   };
 
   const handleMemoDelete = async (memo: Memo) => {
-    Alert.alert(
-      'メモを削除',
-      'このメモを削除しますか？',
-      [
-        {
-          text: 'キャンセル',
-          style: 'cancel',
-        },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: () => deleteMemo(memo.id),
-        },
-      ]
-    );
+    console.log('[MemoListScreen] handleMemoDelete called with memo:', memo);
+    
+    if (Platform.OS === 'web') {
+      // Web環境ではwindow.confirmを使用
+      const confirmed = window.confirm('このメモを削除しますか？');
+      console.log('[MemoListScreen] Web confirm result:', confirmed);
+      
+      if (confirmed) {
+        console.log('[MemoListScreen] Delete confirmed, calling deleteMemo');
+        deleteMemo(memo.id);
+      } else {
+        console.log('[MemoListScreen] Delete cancelled');
+      }
+    } else {
+      // ネイティブ環境ではAlert.alertを使用
+      Alert.alert(
+        'メモを削除',
+        'このメモを削除しますか？',
+        [
+          {
+            text: 'キャンセル',
+            style: 'cancel',
+            onPress: () => console.log('[MemoListScreen] Delete cancelled'),
+          },
+          {
+            text: '削除',
+            style: 'destructive',
+            onPress: () => {
+              console.log('[MemoListScreen] Delete confirmed, calling deleteMemo');
+              deleteMemo(memo.id);
+            },
+          },
+        ]
+      );
+    }
   };
 
   const deleteMemo = async (memoId: string) => {
+    console.log('[MemoListScreen] deleteMemo called with id:', memoId);
+    
     try {
-      const response = await apiService.delete(`${API_CONFIG.ENDPOINTS.MEMOS}/${memoId}`);
+      const endpoint = `${API_CONFIG.ENDPOINTS.MEMOS}/${memoId}`;
+      console.log('[MemoListScreen] Calling apiService.delete with endpoint:', endpoint);
+      
+      const response = await apiService.delete(endpoint);
+      console.log('[MemoListScreen] Delete response:', response);
       
       if (response.success) {
+        console.log('[MemoListScreen] Delete successful, updating state');
         setMemos(prev => prev.filter(memo => memo.id !== memoId));
-        Alert.alert('成功', 'メモを削除しました');
+        
+        if (Platform.OS === 'web') {
+          window.alert('メモを削除しました');
+        } else {
+          Alert.alert('成功', 'メモを削除しました');
+        }
+      } else {
+        console.error('[MemoListScreen] Delete failed with response:', response);
+        
+        if (Platform.OS === 'web') {
+          window.alert('メモの削除に失敗しました');
+        } else {
+          Alert.alert('エラー', 'メモの削除に失敗しました');
+        }
       }
     } catch (error) {
-      Alert.alert('エラー', 'メモの削除に失敗しました');
+      console.error('[MemoListScreen] Delete error:', error);
+      
+      if (Platform.OS === 'web') {
+        window.alert('メモの削除に失敗しました');
+      } else {
+        Alert.alert('エラー', 'メモの削除に失敗しました');
+      }
     }
   };
 

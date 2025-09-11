@@ -202,6 +202,24 @@ class WebStorage {
     );
   }
 
+  async deleteMemo(id: string): Promise<void> {
+    console.log('[WebStorage] deleteMemo called with id:', id);
+    console.log('[WebStorage] Current memos:', this.data.memos);
+    
+    const index = this.data.memos.findIndex(m => m.id === id);
+    console.log('[WebStorage] Memo index found:', index);
+    
+    if (index === -1) {
+      console.error('[WebStorage] Memo not found with id:', id);
+      throw new Error('Memo not found');
+    }
+    
+    this.data.memos.splice(index, 1);
+    console.log('[WebStorage] Memo removed, saving to localStorage');
+    this.saveToLocalStorage();
+    console.log('[WebStorage] Memo deleted successfully');
+  }
+
   // Task operations
   async createTask(task: any): Promise<void> {
     const now = new Date().toISOString();

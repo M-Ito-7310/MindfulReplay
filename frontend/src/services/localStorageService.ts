@@ -178,6 +178,31 @@ class LocalStorageService {
     }
   }
 
+  async deleteMemo(id: string): Promise<ApiResponse<void>> {
+    console.log('[LocalStorageService] deleteMemo called with id:', id);
+    
+    try {
+      await this.initialize();
+      console.log('[LocalStorageService] Calling database.deleteMemo');
+      await database.deleteMemo(id);
+      console.log('[LocalStorageService] Memo deleted successfully');
+      
+      return {
+        success: true,
+        data: undefined,
+      };
+    } catch (error) {
+      console.error('[LocalStorageService] Failed to delete memo:', error);
+      return {
+        success: false,
+        error: {
+          code: 'DB_ERROR',
+          message: 'メモの削除に失敗しました',
+        },
+      };
+    }
+  }
+
   // Task operations
   async getTasks(): Promise<ApiResponse<{ items: Task[] }>> {
     try {

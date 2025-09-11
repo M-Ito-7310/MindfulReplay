@@ -390,6 +390,22 @@ export class Database {
     });
   }
 
+  async deleteMemo(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM memos WHERE id = ?',
+          [id],
+          () => resolve(),
+          (_, error) => {
+            reject(error);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
   // Task operations
   async createTask(task: any): Promise<void> {
     return new Promise((resolve, reject) => {

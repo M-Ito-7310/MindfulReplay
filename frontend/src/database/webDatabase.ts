@@ -51,6 +51,10 @@ export class WebDatabase {
     return webStorage.getMemos(userId, videoId);
   }
 
+  async deleteMemo(id: string): Promise<void> {
+    return webStorage.deleteMemo(id);
+  }
+
   // Task operations
   async createTask(task: any): Promise<void> {
     return webStorage.createTask(task);
