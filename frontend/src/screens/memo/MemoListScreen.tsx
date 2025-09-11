@@ -101,18 +101,12 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
   };
 
   const handleMemoDelete = async (memo: Memo) => {
-    console.log('[MemoListScreen] handleMemoDelete called with memo:', memo);
-    
     if (Platform.OS === 'web') {
       // Web環境ではwindow.confirmを使用
       const confirmed = window.confirm('このメモを削除しますか？');
-      console.log('[MemoListScreen] Web confirm result:', confirmed);
       
       if (confirmed) {
-        console.log('[MemoListScreen] Delete confirmed, calling deleteMemo');
         deleteMemo(memo.id);
-      } else {
-        console.log('[MemoListScreen] Delete cancelled');
       }
     } else {
       // ネイティブ環境ではAlert.alertを使用
@@ -123,15 +117,11 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
           {
             text: 'キャンセル',
             style: 'cancel',
-            onPress: () => console.log('[MemoListScreen] Delete cancelled'),
           },
           {
             text: '削除',
             style: 'destructive',
-            onPress: () => {
-              console.log('[MemoListScreen] Delete confirmed, calling deleteMemo');
-              deleteMemo(memo.id);
-            },
+            onPress: () => deleteMemo(memo.id),
           },
         ]
       );
@@ -139,17 +129,11 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
   };
 
   const deleteMemo = async (memoId: string) => {
-    console.log('[MemoListScreen] deleteMemo called with id:', memoId);
-    
     try {
       const endpoint = `${API_CONFIG.ENDPOINTS.MEMOS}/${memoId}`;
-      console.log('[MemoListScreen] Calling apiService.delete with endpoint:', endpoint);
-      
       const response = await apiService.delete(endpoint);
-      console.log('[MemoListScreen] Delete response:', response);
       
       if (response.success) {
-        console.log('[MemoListScreen] Delete successful, updating state');
         setMemos(prev => prev.filter(memo => memo.id !== memoId));
         
         if (Platform.OS === 'web') {
@@ -158,8 +142,6 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
           Alert.alert('成功', 'メモを削除しました');
         }
       } else {
-        console.error('[MemoListScreen] Delete failed with response:', response);
-        
         if (Platform.OS === 'web') {
           window.alert('メモの削除に失敗しました');
         } else {
@@ -167,8 +149,6 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
         }
       }
     } catch (error) {
-      console.error('[MemoListScreen] Delete error:', error);
-      
       if (Platform.OS === 'web') {
         window.alert('メモの削除に失敗しました');
       } else {

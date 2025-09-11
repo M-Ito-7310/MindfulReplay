@@ -68,6 +68,10 @@ export class WebDatabase {
     return webStorage.updateTask(id, updates);
   }
 
+  async deleteTask(id: string): Promise<void> {
+    return webStorage.deleteTask(id);
+  }
+
   // Clear all data (for development/testing)
   async clearAllData(): Promise<void> {
     return webStorage.clearAllData();

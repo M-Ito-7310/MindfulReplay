@@ -494,6 +494,22 @@ export class Database {
     });
   }
 
+  async deleteTask(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM tasks WHERE id = ?',
+          [id],
+          () => resolve(),
+          (_, error) => {
+            reject(error);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
   // Clear all data (for development/testing)
   async clearAllData(): Promise<void> {
     return new Promise((resolve, reject) => {

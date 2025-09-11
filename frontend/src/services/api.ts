@@ -138,15 +138,11 @@ class ApiService {
 
   // DELETE request with local storage support
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    console.log('[ApiService] delete called with endpoint:', endpoint);
-    
     // Use local storage for specific endpoints
     if (this.shouldUseLocalStorage(endpoint)) {
-      console.log('[ApiService] Using local storage for DELETE');
       return this.handleLocalStorageDelete<T>(endpoint);
     }
     
-    console.log('[ApiService] Using API request for DELETE');
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
@@ -240,19 +236,20 @@ class ApiService {
 
   // Handle local storage DELETE requests
   private async handleLocalStorageDelete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    console.log('[ApiService] handleLocalStorageDelete called with endpoint:', endpoint);
-    
     if (endpoint.includes(API_CONFIG.ENDPOINTS.MEMOS)) {
       const memoIdMatch = endpoint.match(/\/memos\/([^\/]+)$/);
-      console.log('[ApiService] Memo ID match result:', memoIdMatch);
-      
       if (memoIdMatch) {
-        console.log('[ApiService] Deleting memo with ID:', memoIdMatch[1]);
         return localStorageService.deleteMemo(memoIdMatch[1]) as Promise<ApiResponse<T>>;
       }
     }
     
-    console.log('[ApiService] Endpoint not supported for DELETE');
+    if (endpoint.includes(API_CONFIG.ENDPOINTS.TASKS)) {
+      const taskIdMatch = endpoint.match(/\/tasks\/([^\/]+)$/);
+      if (taskIdMatch) {
+        return localStorageService.deleteTask(taskIdMatch[1]) as Promise<ApiResponse<T>>;
+      }
+    }
+    
     return {
       success: false,
       error: {
