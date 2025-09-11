@@ -254,4 +254,41 @@ export class VideoController {
       next(error);
     }
   }
+
+  // Debug endpoint to view database state
+  static async debugDatabase(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      console.log(`[VideoController] Debug request for user: ${userId}`);
+
+      const videos = await VideoService.getUserVideos(userId, { page: 1, limit: 100 });
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user_id: userId,
+          video_count: videos.total,
+          videos: videos.data.map(video => ({
+            id: video.id,
+            youtube_id: video.youtube_id,
+            youtube_url: video.youtube_url,
+            title: video.title,
+            description: video.description?.substring(0, 100) + '...',
+            channel_name: video.channel_name,
+            thumbnail_url: video.thumbnail_url,
+            duration: video.duration,
+            created_at: video.created_at
+          }))
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: '1.0.0'
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

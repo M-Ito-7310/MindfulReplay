@@ -94,12 +94,20 @@ export class YouTubeService {
   }
 
   static async getVideoMetadata(youtubeId: string): Promise<VideoMetadata> {
+    console.log(`[YouTubeService] Getting metadata for video ID: ${youtubeId}`);
+    
     const apiKey = this.getApiKey();
     const useMock = this.shouldUseMock();
+    
+    console.log(`[YouTubeService] API Key configured: ${!!apiKey}`);
+    console.log(`[YouTubeService] Using mock mode: ${useMock}`);
 
     // Use mock data if API key is not configured or mock mode is enabled
     if (useMock) {
-      return this.getMockVideoMetadata(youtubeId);
+      console.log(`[YouTubeService] Fetching mock metadata for: ${youtubeId}`);
+      const mockData = this.getMockVideoMetadata(youtubeId);
+      console.log(`[YouTubeService] Mock data returned:`, mockData);
+      return mockData;
     }
 
     if (!apiKey) {

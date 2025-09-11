@@ -41,14 +41,41 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const loadVideo = async () => {
     if (!videoId) return;
 
+    if (__DEV__) {
+      console.log('[VideoPlayerScreen] Loading video:', videoId);
+    }
+
     setIsLoadingVideo(true);
     try {
       const response = await apiService.get(`${API_CONFIG.ENDPOINTS.VIDEOS}/${videoId}`);
       
+      if (__DEV__) {
+        console.log('[VideoPlayerScreen] Video API response:', response);
+      }
+      
       if (response.success && response.data) {
-        setVideo(response.data);
+        const videoData = response.data.video || response.data;
+        if (__DEV__) {
+          console.log('[VideoPlayerScreen] Video data loaded:', {
+            id: videoData.id,
+            title: videoData.title,
+            youtube_url: videoData.youtube_url,
+            youtube_id: videoData.youtube_id,
+            channel_name: videoData.channel_name,
+            duration: videoData.duration,
+            thumbnail_url: videoData.thumbnail_url
+          });
+        }
+        setVideo(videoData);
+      } else {
+        if (__DEV__) {
+          console.warn('[VideoPlayerScreen] API response not successful or no data:', response);
+        }
       }
     } catch (error) {
+      if (__DEV__) {
+        console.error('[VideoPlayerScreen] Video load error:', error);
+      }
       Alert.alert(
         'エラー',
         '動画の読み込みに失敗しました',

@@ -52,6 +52,10 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const handlePreviewVideo = async () => {
     const trimmedUrl = youtubeUrl.trim();
     
+    if (__DEV__) {
+      console.log('[AddVideoModal] Starting video preview for URL:', trimmedUrl);
+    }
+    
     if (!trimmedUrl) {
       setError('YouTube URLを入力してください');
       return;
@@ -67,14 +71,32 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
 
     try {
       const response = await apiService.get<VideoPreviewResponse>(`${API_CONFIG.ENDPOINTS.VIDEO_PREVIEW}?url=${encodeURIComponent(trimmedUrl)}`);
+      
+      if (__DEV__) {
+        console.log('[AddVideoModal] Preview API response:', response);
+      }
 
       if (response.success && response.data) {
+        if (__DEV__) {
+          console.log('[AddVideoModal] Video preview data:', {
+            title: response.data.videoMetadata.title,
+            channel: response.data.videoMetadata.channelName,
+            duration: response.data.videoMetadata.duration,
+            youtubeUrl: response.data.youtubeUrl
+          });
+        }
         setVideoPreview(response.data);
         setStep('preview');
       } else {
+        if (__DEV__) {
+          console.warn('[AddVideoModal] Preview API response not successful:', response);
+        }
         throw new Error('動画情報の取得に失敗しました');
       }
     } catch (error: any) {
+      if (__DEV__) {
+        console.error('[AddVideoModal] Error previewing video:', error);
+      }
       console.error('Error previewing video:', error);
       
       let errorMessage = '動画情報の取得に失敗しました';
@@ -106,6 +128,14 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const handleSaveVideo = async () => {
     if (!videoPreview) return;
 
+    if (__DEV__) {
+      console.log('[AddVideoModal] Starting video save:', {
+        youtubeUrl: videoPreview.youtubeUrl,
+        title: videoPreview.videoMetadata.title,
+        channel: videoPreview.videoMetadata.channelName
+      });
+    }
+
     setError(null);
     setIsSaving(true);
 
@@ -113,17 +143,34 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
       const response = await apiService.post<VideoSaveResponse>(API_CONFIG.ENDPOINTS.VIDEOS, {
         youtubeUrl: videoPreview.youtubeUrl,
       });
+      
+      if (__DEV__) {
+        console.log('[AddVideoModal] Save API response:', response);
+      }
 
       if (response.success && response.data?.video) {
+        if (__DEV__) {
+          console.log('[AddVideoModal] Video saved successfully:', {
+            id: response.data.video.id,
+            title: response.data.video.title,
+            youtube_url: response.data.video.youtube_url
+          });
+        }
         onVideoAdded(response.data.video);
         handleClose();
         
         // Success message
         await dialogService.showSuccess('動画を保存しました！');
       } else {
+        if (__DEV__) {
+          console.warn('[AddVideoModal] Save API response not successful:', response);
+        }
         throw new Error('動画の保存に失敗しました');
       }
     } catch (error: any) {
+      if (__DEV__) {
+        console.error('[AddVideoModal] Error saving video:', error);
+      }
       console.error('Error saving video:', error);
       
       let errorMessage = '動画の保存に失敗しました';

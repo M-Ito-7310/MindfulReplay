@@ -19,4 +19,9 @@ router.delete('/:id', VideoController.deleteVideo);
 // Video actions
 router.post('/:id/watch', VideoController.markAsWatched);
 
+// Debug endpoint (development only)
+if (process.env.NODE_ENV === 'development') {
+  router.get('/debug/database', VideoController.debugDatabase);
+}
+
 export default router;

@@ -40,7 +40,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showMemos, setShowMemos] = useState(true);
   const playerRef = useRef<any>(null);
 
-  const extractVideoId = (url: string): string => {
+  const extractVideoId = (url?: string): string => {
+    if (!url) return '';
+    
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /youtube\.com\/v\/([^&\n?#]+)/,
@@ -80,7 +82,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const getVideoId = () => {
-    return extractVideoId(video.youtube_url || video.youtube_id);
+    const videoId = extractVideoId(video?.youtube_url || video?.youtube_id);
+    
+    if (__DEV__) {
+      console.log('[VideoPlayer] Video ID extraction:', {
+        youtube_url: video?.youtube_url,
+        youtube_id: video?.youtube_id,
+        extracted_id: videoId,
+        video_title: video?.title
+      });
+    }
+    
+    return videoId;
   };
 
   // Filter and sort memos by timestamp
@@ -90,6 +103,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const generalMemos = memos
     .filter(memo => memo.timestamp_sec === undefined || memo.timestamp_sec === null);
+
+  if (__DEV__) {
+    console.log('[VideoPlayer] Rendering with video data:', {
+      hasVideo: !!video,
+      videoId: video?.id,
+      title: video?.title,
+      youtube_url: video?.youtube_url,
+      youtube_id: video?.youtube_id,
+      channel_name: video?.channel_name,
+      description_length: video?.description?.length || 0,
+      thumbnail_url: video?.thumbnail_url,
+      memos_count: memos.length
+    });
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -106,11 +133,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Video Info */}
       <View style={styles.videoInfo}>
-        <Text style={styles.videoTitle}>{video.title}</Text>
-        {video.channel_name && (
+        <Text style={styles.videoTitle}>{video?.title || 'タイトル不明'}</Text>
+        {video?.channel_name && (
           <Text style={styles.channelName}>{video.channel_name}</Text>
         )}
-        {video.description && (
+        {video?.description && (
           <Text style={styles.description} numberOfLines={3}>
             {video.description}
           </Text>

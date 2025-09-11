@@ -9,11 +9,16 @@ export class VideoService {
     youtubeUrl: string, 
     _themeIds: string[] = []
   ): Promise<Video> {
+    console.log(`[VideoService] Saving video for user: ${userId}, URL: ${youtubeUrl}`);
+    
     const videoRepo = getVideoRepository();
     
     // Extract YouTube ID from URL
     const youtubeId = YouTubeService.extractVideoId(youtubeUrl);
+    console.log(`[VideoService] Extracted YouTube ID: ${youtubeId}`);
+    
     if (!youtubeId) {
+      console.error(`[VideoService] Invalid YouTube URL: ${youtubeUrl}`);
       const error = new Error('Invalid YouTube URL') as any;
       error.status = 400;
       error.code = 'VALIDATION_ERROR';
@@ -21,17 +26,21 @@ export class VideoService {
     }
 
     // Check if video already exists for this user
+    console.log(`[VideoService] Checking if video already exists for user: ${userId}, youtubeId: ${youtubeId}`);
     const existingVideo = await videoRepo.findByUserIdAndYoutubeId(userId, youtubeId);
     if (existingVideo) {
-      // TODO: Handle themes when we implement theme system
+      console.log(`[VideoService] Video already exists:`, existingVideo);
       return existingVideo;
     }
 
     // Get video metadata from YouTube API
+    console.log(`[VideoService] Fetching metadata from YouTube API...`);
     const metadata = await YouTubeService.getVideoMetadata(youtubeId);
+    console.log(`[VideoService] Retrieved metadata:`, metadata);
 
     // Create video record
-    const video = await videoRepo.create({
+    console.log(`[VideoService] Creating video record in database...`);
+    const videoData = {
       user_id: userId,
       youtube_id: metadata.youtubeId,
       youtube_url: youtubeUrl,
@@ -41,7 +50,11 @@ export class VideoService {
       thumbnail_url: metadata.thumbnailUrl,
       duration: metadata.duration,
       published_at: metadata.publishedAt.toISOString()
-    });
+    };
+    console.log(`[VideoService] Video data to save:`, videoData);
+    
+    const video = await videoRepo.create(videoData);
+    console.log(`[VideoService] Video saved successfully:`, video);
 
     // TODO: Handle themes when we implement theme system
 
