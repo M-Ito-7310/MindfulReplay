@@ -103,14 +103,23 @@ class ApiService {
   async get<T>(endpoint: string, options?: { params?: any }): Promise<ApiResponse<T>> {
     // Use local storage for specific endpoints
     if (this.shouldUseLocalStorage(endpoint)) {
-      // console.log(`[API] Using local storage for endpoint: ${endpoint}`);
+      console.log(`[API] Using local storage for endpoint: ${endpoint}`);
       try {
         const result = await this.handleLocalStorageGet<T>(endpoint, options);
-        // console.log(`[API] Local storage result:`, result);
+        console.log(`[API] Local storage result:`, result);
         return result;
       } catch (error) {
         console.error(`[API] Local storage error for ${endpoint}:`, error);
         throw error;
+      }
+    }
+    
+    // For Web, check backend availability first
+    if (!this.isNativePlatform()) {
+      const isBackendReady = await this.isBackendAvailable();
+      if (!isBackendReady) {
+        console.log(`[API] Backend not available, falling back to local storage for: ${endpoint}`);
+        return this.handleLocalStorageGet<T>(endpoint, options);
       }
     }
     
@@ -119,6 +128,7 @@ class ApiService {
       console.log(`[API] Making network request to: ${this.baseURL}${endpoint}`);
       return await this.request<T>(endpoint, { method: 'GET' });
     } catch (error) {
+      console.log(`[API] Network request failed, trying local storage fallback for: ${endpoint}`);
       // If API fails, try local storage as fallback
       return this.handleLocalStorageGet<T>(endpoint, options);
     }
@@ -132,6 +142,15 @@ class ApiService {
       return this.handleLocalStoragePost<T>(endpoint, data);
     }
     
+    // For Web, check backend availability first
+    if (!this.isNativePlatform()) {
+      const isBackendReady = await this.isBackendAvailable();
+      if (!isBackendReady) {
+        console.log(`[API] Backend not available, falling back to local storage POST for: ${endpoint}`);
+        return this.handleLocalStoragePost<T>(endpoint, data);
+      }
+    }
+    
     // Fall back to API request
     try {
       console.log(`[API] Making network POST request to: ${this.baseURL}${endpoint}`, data);
@@ -140,6 +159,7 @@ class ApiService {
         body: data ? JSON.stringify(data) : undefined,
       });
     } catch (error) {
+      console.log(`[API] Network POST failed, trying local storage fallback for: ${endpoint}`);
       // If API fails, try local storage as fallback
       return this.handleLocalStoragePost<T>(endpoint, data);
     }
@@ -152,10 +172,17 @@ class ApiService {
       return this.handleLocalStoragePut<T>(endpoint, data);
     }
     
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    // Fall back to API request
+    try {
+      console.log(`[API] Making network PUT request to: ${this.baseURL}${endpoint}`, data);
+      return await this.request<T>(endpoint, {
+        method: 'PUT',
+        body: data ? JSON.stringify(data) : undefined,
+      });
+    } catch (error) {
+      // If API fails, try local storage as fallback
+      return this.handleLocalStoragePut<T>(endpoint, data);
+    }
   }
 
   // DELETE request with local storage support
@@ -165,23 +192,85 @@ class ApiService {
       return this.handleLocalStorageDelete<T>(endpoint);
     }
     
-    return this.request<T>(endpoint, { method: 'DELETE' });
+    // Fall back to API request
+    try {
+      console.log(`[API] Making network DELETE request to: ${this.baseURL}${endpoint}`);
+      return await this.request<T>(endpoint, { method: 'DELETE' });
+    } catch (error) {
+      // If API fails, try local storage as fallback
+      return this.handleLocalStorageDelete<T>(endpoint);
+    }
   }
 
   // Check if endpoint should use local storage
   private shouldUseLocalStorage(endpoint: string): boolean {
-    // Always use local storage for these endpoints in demo mode
-    const localEndpoints = [
-      API_CONFIG.ENDPOINTS.VIDEOS,
-      API_CONFIG.ENDPOINTS.MEMOS,
-      API_CONFIG.ENDPOINTS.TASKS,
-      API_CONFIG.ENDPOINTS.LOGIN,
-      API_CONFIG.ENDPOINTS.LOGOUT,
-      API_CONFIG.ENDPOINTS.REGISTER,
-      API_CONFIG.ENDPOINTS.REFRESH,
-    ];
+    // Native platforms always use local storage for all endpoints
+    if (this.isNativePlatform()) {
+      const localEndpoints = [
+        API_CONFIG.ENDPOINTS.VIDEOS,
+        API_CONFIG.ENDPOINTS.MEMOS,
+        API_CONFIG.ENDPOINTS.TASKS,
+        API_CONFIG.ENDPOINTS.LOGIN,
+        API_CONFIG.ENDPOINTS.LOGOUT,
+        API_CONFIG.ENDPOINTS.REGISTER,
+        API_CONFIG.ENDPOINTS.REFRESH,
+      ];
+      
+      return localEndpoints.some(e => endpoint.includes(e));
+    }
     
-    return localEndpoints.some(e => endpoint.includes(e));
+    // Web platforms should try backend first and use local storage as fallback
+    // Only use local storage immediately for specific cases (when explicitly needed)
+    return false;
+  }
+
+  // Check if running on native platform
+  private isNativePlatform(): boolean {
+    return typeof window === 'undefined' || 
+           (typeof navigator !== 'undefined' && navigator.product === 'ReactNative');
+  }
+
+  // Check if backend server is available (Web only)
+  private async isBackendAvailable(): Promise<boolean> {
+    if (this.isNativePlatform()) return false;
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
+      // Try multiple endpoints to check server availability
+      const healthEndpoints = [
+        `${this.baseURL.replace('/api', '')}/health`,
+        `${this.baseURL}/health`,
+        this.baseURL, // Just try the API base URL
+      ];
+      
+      for (const endpoint of healthEndpoints) {
+        try {
+          console.log(`[API] Checking backend availability: ${endpoint}`);
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          
+          if (response.ok || response.status === 404) { // 404 means server is responding
+            clearTimeout(timeoutId);
+            console.log(`[API] Backend server available at: ${endpoint}`);
+            return true;
+          }
+        } catch (err) {
+          // Continue to next endpoint
+          continue;
+        }
+      }
+      
+      clearTimeout(timeoutId);
+      console.log('[API] Backend server not available on any endpoint');
+      return false;
+    } catch (error) {
+      console.log('[API] Backend server not available, using local storage fallback');
+      return false;
+    }
   }
 
   // Handle local storage GET requests
@@ -414,16 +503,24 @@ class ApiService {
       } as ApiResponse<T>;
     }
 
-    // Mock video preview data
-    const mockPreview = {
-      youtube_id: videoId,
-      youtube_url: decodedUrl,
-      title: `YouTube動画 (${videoId})`,
-      description: 'YouTube動画の説明です。',
-      thumbnail_url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+    // Mock video preview data with proper structure
+    const mockVideoMetadata = {
+      youtubeId: videoId,
+      title: `サンプル動画タイトル (${videoId})`,
+      description: 'これはサンプル動画の説明です。実際の動画では、動画の詳細な説明が表示されます。',
+      channelId: 'sample_channel_id',
+      channelName: 'サンプルチャンネル',
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
       duration: 300, // 5 minutes default
-      channel_name: 'サンプルチャンネル',
-      published_at: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      viewCount: 10000,
+      likeCount: 500,
+      tags: ['サンプル', 'YouTube', 'デモ']
+    };
+
+    const mockPreview = {
+      youtubeUrl: decodedUrl,
+      videoMetadata: mockVideoMetadata
     };
 
     return {

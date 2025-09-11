@@ -10,6 +10,7 @@ import {
 import { MemoList } from '@/components/memo';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
+import { dialogService } from '@/services/dialog';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { Memo } from '@/types';
 
@@ -68,10 +69,8 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
         setPage(pageNum);
       }
     } catch (error) {
-      Alert.alert(
-        'エラー',
-        'メモの読み込みに失敗しました'
-      );
+      console.error('Load memos error:', error);
+      await dialogService.showError('メモの読み込みに失敗しました');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -101,22 +100,10 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
   };
 
   const handleMemoDelete = async (memo: Memo) => {
-    // 全プラットフォームでAlert.alertを使用
-    Alert.alert(
-      'メモを削除',
-      'このメモを削除しますか？',
-      [
-        {
-          text: 'キャンセル',
-          style: 'cancel',
-        },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: () => deleteMemo(memo.id),
-        },
-      ]
-    );
+    const confirmed = await dialogService.confirmDelete(memo.title || 'メモ', 'メモ');
+    if (confirmed) {
+      deleteMemo(memo.id);
+    }
   };
 
   const deleteMemo = async (memoId: string) => {
@@ -126,12 +113,13 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
       
       if (response.success) {
         setMemos(prev => prev.filter(memo => memo.id !== memoId));
-        Alert.alert('成功', 'メモを削除しました');
+        await dialogService.showSuccess('メモを削除しました');
       } else {
-        Alert.alert('エラー', 'メモの削除に失敗しました');
+        await dialogService.showError('メモの削除に失敗しました');
       }
     } catch (error) {
-      Alert.alert('エラー', 'メモの削除に失敗しました');
+      console.error('Delete memo error:', error);
+      await dialogService.showError('メモの削除に失敗しました');
     }
   };
 

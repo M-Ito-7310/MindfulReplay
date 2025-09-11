@@ -17,6 +17,7 @@ import { TaskListScreen } from './task/TaskListScreen';
 import { TaskCreateScreen } from './task/TaskCreateScreen';
 import { TaskEditScreen } from './task/TaskEditScreen';
 import { authService } from '@/services/auth';
+import { dialogService } from '@/services/dialog';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 
 interface MainScreenProps {
@@ -83,11 +84,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
       }
       
       // Success message
-      if (typeof window !== 'undefined') {
-        window.alert('ログアウトしました');
-      } else {
-        Alert.alert('ログアウト', 'ログアウトしました');
-      }
+      await dialogService.showSuccess('ログアウトしました');
     } catch (error) {
       console.error('Logout error:', error);
       
@@ -98,16 +95,11 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
     }
   };
 
-  const confirmLogout = () => {
-    // 全プラットフォームでAlert.alertを使用
-    Alert.alert(
-      'ログアウト',
-      'ログアウトしますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: 'ログアウト', onPress: handleLogout, style: 'destructive' },
-      ]
-    );
+  const confirmLogout = async () => {
+    const confirmed = await dialogService.confirmLogout();
+    if (confirmed) {
+      handleLogout();
+    }
   };
 
   const renderTabContent = () => {
@@ -255,12 +247,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.XS,
     paddingHorizontal: SPACING.MD,
     borderRadius: BORDER_RADIUS.SM,
-    backgroundColor: COLORS.GRAY_100,
+    backgroundColor: COLORS.ERROR_LIGHT,
+    borderWidth: 1,
+    borderColor: COLORS.ERROR,
   },
   logoutText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: COLORS.ERROR,
   },
   tabBar: {
     backgroundColor: COLORS.WHITE,

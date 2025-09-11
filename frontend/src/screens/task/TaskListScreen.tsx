@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { TaskList } from '@/components/task';
 import { taskService } from '@/services/task';
+import { dialogService } from '@/services/dialog';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { Task } from '@/types';
 
@@ -70,10 +71,7 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
 
     } catch (error) {
       console.error('Error loading tasks:', error);
-      Alert.alert(
-        'エラー',
-        'タスクの読み込みに失敗しました'
-      );
+      await dialogService.showError('タスクの読み込みに失敗しました');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -120,37 +118,25 @@ export const TaskListScreen: React.FC<TaskListScreenProps> = ({ navigation, rout
       ));
     } catch (error) {
       console.error('Error updating task status:', error);
-      Alert.alert('エラー', 'タスクの更新に失敗しました');
+      await dialogService.showError('タスクの更新に失敗しました');
     }
   };
 
   const handleTaskDelete = async (task: Task) => {
-    // 全プラットフォームでAlert.alertを使用
-    Alert.alert(
-      'タスクを削除',
-      'このタスクを削除しますか？',
-      [
-        {
-          text: 'キャンセル',
-          style: 'cancel',
-        },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: () => deleteTask(task.id),
-        },
-      ]
-    );
+    const confirmed = await dialogService.confirmDelete(task.title || 'タスク', 'タスク');
+    if (confirmed) {
+      deleteTask(task.id);
+    }
   };
 
   const deleteTask = async (taskId: string) => {
     try {
       await taskService.deleteTask(taskId);
       setTasks(prev => prev.filter(task => task.id !== taskId));
-      Alert.alert('成功', 'タスクを削除しました');
+      await dialogService.showSuccess('タスクを削除しました');
     } catch (error) {
       console.error('Error deleting task:', error);
-      Alert.alert('エラー', 'タスクの削除に失敗しました');
+      await dialogService.showError('タスクの削除に失敗しました');
     }
   };
 

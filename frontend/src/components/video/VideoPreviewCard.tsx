@@ -30,7 +30,25 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
   videoMetadata,
   youtubeUrl,
 }) => {
+  // Safety check for videoMetadata
+  if (!videoMetadata) {
+    console.error('VideoPreviewCard: videoMetadata is undefined');
+    return (
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <View style={styles.infoContainer}>
+            <Text style={styles.errorText}>
+              動画情報の読み込みに失敗しました
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   const formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
@@ -42,6 +60,8 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
   };
 
   const formatViewCount = (count: number): string => {
+    if (!count || isNaN(count)) return '0回再生';
+    
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M回再生`;
     } else if (count >= 1000) {
@@ -51,12 +71,18 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
   };
 
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    if (!dateString) return '日付不明';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (error) {
+      return '日付不明';
+    }
   };
 
   return (
@@ -67,9 +93,12 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
         {/* Thumbnail */}
         <View style={styles.thumbnailContainer}>
           <Image
-            source={{ uri: videoMetadata.thumbnailUrl }}
+            source={{ uri: videoMetadata.thumbnailUrl || videoMetadata.thumbnail_url || `https://img.youtube.com/vi/${videoMetadata.youtubeId}/maxresdefault.jpg` }}
             style={styles.thumbnail}
             resizeMode="cover"
+            onError={(error) => {
+              console.warn('Thumbnail loading error:', error);
+            }}
           />
           <View style={styles.durationBadge}>
             <Text style={styles.durationText}>
@@ -81,26 +110,26 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
         {/* Video Info */}
         <View style={styles.infoContainer}>
           <Text style={styles.title} numberOfLines={2}>
-            {videoMetadata.title}
+            {videoMetadata.title || 'タイトル不明'}
           </Text>
           
           <Text style={styles.channelName}>
-            {videoMetadata.channelName}
+            {videoMetadata.channelName || videoMetadata.channel_name || 'チャンネル不明'}
           </Text>
 
           <View style={styles.metaContainer}>
             <Text style={styles.metaText}>
-              {formatViewCount(videoMetadata.viewCount)}
+              {formatViewCount(videoMetadata.viewCount || videoMetadata.view_count || 0)}
             </Text>
             <Text style={styles.metaDot}>•</Text>
             <Text style={styles.metaText}>
-              {formatDate(videoMetadata.publishedAt)}
+              {formatDate(videoMetadata.publishedAt || videoMetadata.published_at)}
             </Text>
-            {videoMetadata.likeCount && (
+            {(videoMetadata.likeCount || videoMetadata.like_count) && (
               <>
                 <Text style={styles.metaDot}>•</Text>
                 <Text style={styles.metaText}>
-                  👍 {videoMetadata.likeCount.toLocaleString()}
+                  👍 {(videoMetadata.likeCount || videoMetadata.like_count)?.toLocaleString()}
                 </Text>
               </>
             )}
@@ -112,7 +141,7 @@ export const VideoPreviewCard: React.FC<VideoPreviewCardProps> = ({
             </Text>
           )}
 
-          {videoMetadata.tags && videoMetadata.tags.length > 0 && (
+          {videoMetadata.tags && Array.isArray(videoMetadata.tags) && videoMetadata.tags.length > 0 && (
             <View style={styles.tagsContainer}>
               {videoMetadata.tags.slice(0, 3).map((tag, index) => (
                 <View key={index} style={styles.tag}>
@@ -242,5 +271,11 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,
     color: COLORS.TEXT_MUTED,
     fontFamily: 'monospace',
+  },
+  errorText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.ERROR,
+    textAlign: 'center',
+    padding: SPACING.LG,
   },
 });
