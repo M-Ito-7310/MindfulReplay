@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { Button } from '@/components/common';
 import { AddVideoModal } from '@/components/video/AddVideoModal';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
+import { dialogService } from '@/services/dialog';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
 import { Video, VideosListResponse } from '@/types';
 
@@ -45,10 +45,8 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
         setVideos(videoData);
       }
     } catch (error) {
-      Alert.alert(
-        'エラー',
-        '動画の読み込みに失敗しました'
-      );
+      console.error('Load videos error:', error);
+      await dialogService.showError('動画の読み込みに失敗しました');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

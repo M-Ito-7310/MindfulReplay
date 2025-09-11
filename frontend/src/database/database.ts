@@ -136,13 +136,13 @@ export class Database {
     });
   }
 
-  // Seed initial data
+  // Initialize database without seed data
   async seedData() {
     const defaultUserId = 'user_demo';
     
-    // Check if demo user exists
+    // Check if demo user exists, create if not found
     await this.getUserById(defaultUserId).catch(async () => {
-      // Create demo user
+      // Create demo user only (no sample content)
       await this.createUser({
         id: defaultUserId,
         email: 'demo@example.com',
@@ -150,74 +150,7 @@ export class Database {
         display_name: 'デモユーザー',
       });
 
-      // Seed sample videos
-      const sampleVideos = [
-        {
-          id: 'video_1',
-          user_id: defaultUserId,
-          youtube_id: 'dQw4w9WgXcQ',
-          youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          title: 'プロダクティビティ向上のコツ - 効率的な仕事術',
-          description: '仕事の効率を劇的に向上させる実践的なテクニックを紹介します',
-          thumbnail_url: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-          duration: 600,
-          channel_name: 'Productivity Master',
-        },
-        {
-          id: 'video_2',
-          user_id: defaultUserId,
-          youtube_id: 'jNQXAC9IVRw',
-          youtube_url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
-          title: 'マインドフルネス瞑想入門 - 初心者向けガイド',
-          description: '日常生活に取り入れやすいマインドフルネス瞑想の基本を学びます',
-          thumbnail_url: 'https://img.youtube.com/vi/jNQXAC9IVRw/maxresdefault.jpg',
-          duration: 900,
-          channel_name: 'Mindfulness Journey',
-        },
-        {
-          id: 'video_3',
-          user_id: defaultUserId,
-          youtube_id: '9bZkp7q19f0',
-          youtube_url: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
-          title: 'タイムマネジメントの極意',
-          description: '限られた時間を最大限に活用する方法',
-          thumbnail_url: 'https://img.youtube.com/vi/9bZkp7q19f0/maxresdefault.jpg',
-          duration: 720,
-          channel_name: 'Time Management Pro',
-        },
-      ];
-
-      for (const video of sampleVideos) {
-        await this.createVideo(video);
-      }
-
-      // Seed sample memos
-      const sampleMemos = [
-        {
-          id: 'memo_1',
-          user_id: defaultUserId,
-          video_id: 'video_1',
-          content: 'ポモドーロテクニックを試してみる。25分集中、5分休憩のサイクル。',
-          timestamp_sec: 120,
-          memo_type: 'action',
-          importance: 4,
-        },
-        {
-          id: 'memo_2',
-          user_id: defaultUserId,
-          video_id: 'video_2',
-          content: '呼吸に意識を向けることで、今この瞬間に集中できる。',
-          timestamp_sec: 300,
-          memo_type: 'insight',
-          importance: 5,
-        },
-      ];
-
-      for (const memo of sampleMemos) {
-        await this.createMemo(memo);
-      }
-
-      console.log('Demo data seeded successfully');
+      console.log('Demo user created successfully - no sample data generated');
     });
   }
 

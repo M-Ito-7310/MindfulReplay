@@ -74,7 +74,7 @@ class NativeStorage {
   private seedInitialData() {
     const now = new Date().toISOString();
     
-    // Users
+    // Users - create only demo user
     this.data.users = [
       {
         id: 'user_demo',
@@ -86,120 +86,13 @@ class NativeStorage {
       }
     ];
 
-    // Videos
-    this.data.videos = [
-      {
-        id: 'video_1',
-        user_id: 'user_demo',
-        youtube_id: 'dQw4w9WgXcQ',
-        youtube_url: 'https://youtu.be/dQw4w9WgXcQ',
-        title: 'サンプル動画1: プログラミング学習のコツ',
-        description: 'プログラミング学習を効率的に進めるための基本的なコツを解説します。',
-        thumbnail_url: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        duration: 240,
-        channel_name: 'プログラミング学習チャンネル',
-        published_at: now,
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        id: 'video_2',
-        user_id: 'user_demo',
-        youtube_id: 'jNQXAC9IVRw',
-        youtube_url: 'https://youtu.be/jNQXAC9IVRw',
-        title: 'サンプル動画2: React Native開発入門',
-        description: 'React Nativeを使ったモバイルアプリ開発の基礎を学びます。',
-        thumbnail_url: 'https://img.youtube.com/vi/jNQXAC9IVRw/maxresdefault.jpg',
-        duration: 360,
-        channel_name: 'モバイル開発ガイド',
-        published_at: now,
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        id: 'video_3',
-        user_id: 'user_demo',
-        youtube_id: 'ZK3O402wf1c',
-        youtube_url: 'https://youtu.be/ZK3O402wf1c',
-        title: 'サンプル動画3: TypeScript実践テクニック',
-        description: 'TypeScriptを実際のプロジェクトで活用するための実践的なテクニック。',
-        thumbnail_url: 'https://img.youtube.com/vi/ZK3O402wf1c/maxresdefault.jpg',
-        duration: 180,
-        channel_name: 'TypeScript Masters',
-        published_at: now,
-        created_at: now,
-        updated_at: now,
-      }
-    ];
+    // Initialize empty arrays - no sample data
+    this.data.videos = [];
+    this.data.memos = [];
+    this.data.tasks = [];
+    this.data.viewing_sessions = [];
 
-    // Memos
-    this.data.memos = [
-      {
-        id: 'memo_1',
-        user_id: 'user_demo',
-        video_id: 'video_1',
-        content: '変数名は分かりやすく命名することが重要',
-        timestamp_sec: 120,
-        memo_type: 'insight',
-        importance: 'high',
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        id: 'memo_2',
-        user_id: 'user_demo',
-        video_id: 'video_1',
-        content: 'コードレビューは品質向上に欠かせない',
-        timestamp_sec: 180,
-        memo_type: 'insight',
-        importance: 'medium',
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        id: 'memo_3',
-        user_id: 'user_demo',
-        video_id: 'video_2',
-        content: 'React Navigationの使い方を復習する',
-        timestamp_sec: 90,
-        memo_type: 'todo',
-        importance: 'medium',
-        created_at: now,
-        updated_at: now,
-      }
-    ];
-
-    // Tasks
-    this.data.tasks = [
-      {
-        id: 'task_1',
-        user_id: 'user_demo',
-        memo_id: 'memo_3',
-        video_id: 'video_2',
-        title: 'React Navigation公式ドキュメントを読む',
-        description: 'React Navigationの最新バージョンのドキュメントを読んで理解を深める',
-        status: 'pending',
-        priority: 'medium',
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        id: 'task_2',
-        user_id: 'user_demo',
-        memo_id: 'memo_1',
-        video_id: 'video_1',
-        title: '変数命名規則をチームで統一する',
-        description: 'プロジェクトの変数命名規則を明文化し、チーム内で共有する',
-        status: 'in_progress',
-        priority: 'high',
-        due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at: now,
-        updated_at: now,
-      }
-    ];
-
-    console.log('[NativeStorage] Seed data created');
+    console.log('[NativeStorage] Demo user created - no sample data generated');
   }
 
   // 初期化完了を待つヘルパーメソッド

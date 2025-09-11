@@ -99,9 +99,9 @@ class ApiService {
     }
   }
 
-  // GET request with local storage fallback
+  // GET request
   async get<T>(endpoint: string, options?: { params?: any }): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints
+    // Use local storage for specific endpoints on native platforms
     if (this.shouldUseLocalStorage(endpoint)) {
       console.log(`[API] Using local storage for endpoint: ${endpoint}`);
       try {
@@ -114,92 +114,52 @@ class ApiService {
       }
     }
     
-    // For Web, check backend availability first
-    if (!this.isNativePlatform()) {
-      const isBackendReady = await this.isBackendAvailable();
-      if (!isBackendReady) {
-        console.log(`[API] Backend not available, falling back to local storage for: ${endpoint}`);
-        return this.handleLocalStorageGet<T>(endpoint, options);
-      }
-    }
-    
-    // Fall back to API request
-    try {
-      console.log(`[API] Making network request to: ${this.baseURL}${endpoint}`);
-      return await this.request<T>(endpoint, { method: 'GET' });
-    } catch (error) {
-      console.log(`[API] Network request failed, trying local storage fallback for: ${endpoint}`);
-      // If API fails, try local storage as fallback
-      return this.handleLocalStorageGet<T>(endpoint, options);
-    }
+    // Make API request without fallback
+    console.log(`[API] Making network request to: ${this.baseURL}${endpoint}`);
+    return await this.request<T>(endpoint, { method: 'GET' });
   }
 
-  // POST request with local storage support
+  // POST request
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints
+    // Use local storage for specific endpoints on native platforms
     if (this.shouldUseLocalStorage(endpoint)) {
       console.log(`[API] Using local storage POST for endpoint: ${endpoint}`, data);
       return this.handleLocalStoragePost<T>(endpoint, data);
     }
     
-    // For Web, check backend availability first
-    if (!this.isNativePlatform()) {
-      const isBackendReady = await this.isBackendAvailable();
-      if (!isBackendReady) {
-        console.log(`[API] Backend not available, falling back to local storage POST for: ${endpoint}`);
-        return this.handleLocalStoragePost<T>(endpoint, data);
-      }
-    }
-    
-    // Fall back to API request
-    try {
-      console.log(`[API] Making network POST request to: ${this.baseURL}${endpoint}`, data);
-      return await this.request<T>(endpoint, {
-        method: 'POST',
-        body: data ? JSON.stringify(data) : undefined,
-      });
-    } catch (error) {
-      console.log(`[API] Network POST failed, trying local storage fallback for: ${endpoint}`);
-      // If API fails, try local storage as fallback
-      return this.handleLocalStoragePost<T>(endpoint, data);
-    }
+    // Make API request without fallback
+    console.log(`[API] Making network POST request to: ${this.baseURL}${endpoint}`, data);
+    return await this.request<T>(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
   }
 
-  // PUT request with local storage support
+  // PUT request
   async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints
+    // Use local storage for specific endpoints on native platforms
     if (this.shouldUseLocalStorage(endpoint)) {
       return this.handleLocalStoragePut<T>(endpoint, data);
     }
     
-    // Fall back to API request
-    try {
-      console.log(`[API] Making network PUT request to: ${this.baseURL}${endpoint}`, data);
-      return await this.request<T>(endpoint, {
-        method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined,
-      });
-    } catch (error) {
-      // If API fails, try local storage as fallback
-      return this.handleLocalStoragePut<T>(endpoint, data);
-    }
+    // Make API request without fallback
+    console.log(`[API] Making network PUT request to: ${this.baseURL}${endpoint}`, data);
+    return await this.request<T>(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
   }
 
-  // DELETE request with local storage support
+  // DELETE request
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    // Use local storage for specific endpoints
+    // Use local storage for specific endpoints on native platforms
     if (this.shouldUseLocalStorage(endpoint)) {
       return this.handleLocalStorageDelete<T>(endpoint);
     }
     
-    // Fall back to API request
-    try {
-      console.log(`[API] Making network DELETE request to: ${this.baseURL}${endpoint}`);
-      return await this.request<T>(endpoint, { method: 'DELETE' });
-    } catch (error) {
-      // If API fails, try local storage as fallback
-      return this.handleLocalStorageDelete<T>(endpoint);
-    }
+    // Make API request without fallback
+    console.log(`[API] Making network DELETE request to: ${this.baseURL}${endpoint}`);
+    return await this.request<T>(endpoint, { method: 'DELETE' });
   }
 
   // Check if endpoint should use local storage
@@ -327,28 +287,15 @@ class ApiService {
       return localStorageService.createTask(data) as Promise<ApiResponse<T>>;
     }
 
-    // Handle authentication endpoints
+    // Handle authentication endpoints (native platforms only)
     if (endpoint.includes(API_CONFIG.ENDPOINTS.LOGIN)) {
-      console.log('[API] Handling local login:', data);
-      // Mock successful login
-      const mockToken = 'demo_jwt_token_' + Date.now();
-      
+      console.log('[API] Login endpoint called in local storage mode');
       return {
-        success: true,
-        data: {
-          user: { 
-            id: 'user_demo', 
-            email: data.email, 
-            name: 'Demo User',
-            username: 'demo_user',
-            display_name: 'Demo User'
-          },
-          tokens: {
-            accessToken: mockToken,
-            refreshToken: 'demo_refresh_token_' + Date.now(),
-            expiresIn: 3600
-          }
-        }
+        success: false,
+        error: {
+          code: 'NOT_SUPPORTED',
+          message: 'Authentication requires backend server connection',
+        },
       } as ApiResponse<T>;
     }
 
@@ -362,50 +309,24 @@ class ApiService {
     }
 
     if (endpoint.includes(API_CONFIG.ENDPOINTS.REGISTER)) {
-      console.log('[API] Handling local register:', data);
-      // Mock successful registration
-      const mockToken = 'demo_jwt_token_' + Date.now();
-      
+      console.log('[API] Register endpoint called in local storage mode');
       return {
-        success: true,
-        data: {
-          user: { 
-            id: 'user_demo', 
-            email: data.email, 
-            name: data.name || 'Demo User',
-            username: data.username || 'demo_user',
-            display_name: data.name || 'Demo User'
-          },
-          tokens: {
-            accessToken: mockToken,
-            refreshToken: 'demo_refresh_token_' + Date.now(),
-            expiresIn: 3600
-          }
-        }
+        success: false,
+        error: {
+          code: 'NOT_SUPPORTED',
+          message: 'Registration requires backend server connection',
+        },
       } as ApiResponse<T>;
     }
 
     if (endpoint.includes(API_CONFIG.ENDPOINTS.REFRESH)) {
-      console.log('[API] Handling local token refresh');
-      // Mock successful token refresh
-      const mockToken = 'demo_jwt_token_' + Date.now();
-      
+      console.log('[API] Token refresh endpoint called in local storage mode');
       return {
-        success: true,
-        data: {
-          user: {
-            id: 'user_demo',
-            email: 'demo@mindfulreplay.com',
-            name: 'Demo User',
-            username: 'demo_user',
-            display_name: 'Demo User'
-          },
-          tokens: {
-            accessToken: mockToken,
-            refreshToken: 'demo_refresh_token_' + Date.now(),
-            expiresIn: 3600
-          }
-        }
+        success: false,
+        error: {
+          code: 'NOT_SUPPORTED',
+          message: 'Token refresh requires backend server connection',
+        },
       } as ApiResponse<T>;
     }
     
@@ -461,71 +382,14 @@ class ApiService {
     } as ApiResponse<T>;
   }
 
-  // Handle video preview requests (mock implementation)
+  // Handle video preview requests - removed mock implementation
   private async handleVideoPreview<T>(endpoint: string): Promise<ApiResponse<T>> {
-    // Extract URL from query parameter
-    const urlMatch = endpoint.match(/url=([^&]+)/);
-    if (!urlMatch) {
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_URL',
-          message: '無効なURLです',
-        },
-      } as ApiResponse<T>;
-    }
-
-    const decodedUrl = decodeURIComponent(urlMatch[1]);
-    
-    // Extract YouTube video ID
-    const patterns = [
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-      /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
-    ];
-
-    let videoId = '';
-    for (const pattern of patterns) {
-      const match = decodedUrl.match(pattern);
-      if (match) {
-        videoId = match[1];
-        break;
-      }
-    }
-
-    if (!videoId) {
-      return {
-        success: false,
-        error: {
-          code: 'INVALID_YOUTUBE_URL',
-          message: '有効なYouTube URLを入力してください',
-        },
-      } as ApiResponse<T>;
-    }
-
-    // Mock video preview data with proper structure
-    const mockVideoMetadata = {
-      youtubeId: videoId,
-      title: `サンプル動画タイトル (${videoId})`,
-      description: 'これはサンプル動画の説明です。実際の動画では、動画の詳細な説明が表示されます。',
-      channelId: 'sample_channel_id',
-      channelName: 'サンプルチャンネル',
-      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-      duration: 300, // 5 minutes default
-      publishedAt: new Date().toISOString(),
-      viewCount: 10000,
-      likeCount: 500,
-      tags: ['サンプル', 'YouTube', 'デモ']
-    };
-
-    const mockPreview = {
-      youtubeUrl: decodedUrl,
-      videoMetadata: mockVideoMetadata
-    };
-
     return {
-      success: true,
-      data: mockPreview,
+      success: false,
+      error: {
+        code: 'NOT_SUPPORTED',
+        message: 'Video preview requires backend server connection',
+      },
     } as ApiResponse<T>;
   }
 

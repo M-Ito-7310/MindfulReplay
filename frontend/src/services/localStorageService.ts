@@ -11,9 +11,10 @@ class LocalStorageService {
     if (!this.initialized) {
       console.log('[LocalStorage] Initializing database...');
       try {
-        await database.seedData();
+        // Initialize database without automatic seed data
+        await database.seedData(); // This now only creates the demo user
         this.initialized = true;
-        console.log('[LocalStorage] Database initialized successfully');
+        console.log('[LocalStorage] Database initialized successfully - ready for real data');
       } catch (error) {
         console.error('[LocalStorage] Database initialization failed:', error);
         throw error;
@@ -362,10 +363,6 @@ class LocalStorageService {
     this.initialized = false;
   }
 
-  async resetWithSampleData(): Promise<void> {
-    await this.clearAllData();
-    await this.initialize();
-  }
 }
 
 export const localStorageService = new LocalStorageService();

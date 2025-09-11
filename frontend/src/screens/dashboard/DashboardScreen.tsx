@@ -41,24 +41,24 @@ const { width } = Dimensions.get('window');
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const [stats, setStats] = useState<ViewingStats>({
-    todayWatchTime: 45,
-    todayMemoCount: 3,
-    todayTaskCompleted: 2,
-    weeklyProgress: 65,
-    streak: 7,
+    todayWatchTime: 0,
+    todayMemoCount: 0,
+    todayTaskCompleted: 0,
+    weeklyProgress: 0,
+    streak: 0,
   });
   const [recentMemos, setRecentMemos] = useState<Memo[]>([]);
   const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
   const [suggestedVideos, setSuggestedVideos] = useState<Video[]>([]);
   const [todaysReminders, setTodaysReminders] = useState<ReminderData[]>([]);
   const [progressData, setProgressData] = useState<ProgressData>({
-    totalVideos: 15,
-    totalMemos: 8,
-    totalTasks: 12,
-    completedTasks: 9,
-    streakDays: 7,
+    totalVideos: 0,
+    totalMemos: 0,
+    totalTasks: 0,
+    completedTasks: 0,
+    streakDays: 0,
     weeklyGoal: 10,
-    weeklyProgress: 65,
+    weeklyProgress: 0,
   });
   const [showProgressTracking, setShowProgressTracking] = useState(false);
   const [cycleProgress, setCycleProgress] = useState<CycleProgress>({
@@ -73,33 +73,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   }, []);
 
   const loadDashboardData = async () => {
-    // ここで実際のAPIからデータを取得
-    // 現在はモックデータ
-    
-    // 今日のリマインダーを取得
-    const reminders = notificationService.getTodaysReminders();
-    setTodaysReminders(reminders);
-    
-    // 進捗データの同期
-    setProgressData(prev => ({
-      ...prev,
-      streakDays: stats.streak,
-      weeklyProgress: stats.weeklyProgress,
-    }));
-
-    // サイクル進捗の分析（モックデータ）
-    const mockSessions: ViewingSession[] = [
-      { id: '1', user_id: 'user_1', video_id: 'video_1', watch_duration: 120, pause_count: 2, rewind_count: 1, engagement_level: 4, created_at: new Date().toISOString(), completed_at: new Date().toISOString() }
-    ];
-    const mockMemos: Memo[] = [
-      { id: '1', user_id: 'user_1', video_id: 'video_1', content: 'テストメモ', memo_type: 'insight', importance: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-    ];
-    const mockTasks: Task[] = [
-      { id: '1', user_id: 'user_1', title: 'テストタスク', description: '説明', status: 'completed', priority: 'medium', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-    ];
-    
-    const cycleAnalysis = viewingCycleService.analyzeCycleProgress(mockSessions, mockMemos, mockTasks);
-    setCycleProgress(cycleAnalysis);
+    try {
+      // 今日のリマインダーを取得
+      const reminders = notificationService.getTodaysReminders();
+      setTodaysReminders(reminders);
+      
+      // TODO: 実際のAPIからデータを取得する実装
+      // const videosResponse = await apiService.get('/videos');
+      // const memosResponse = await apiService.get('/memos');
+      // const tasksResponse = await apiService.get('/tasks');
+      
+      // 現在は空のデータでサイクル進捗を初期化
+      const emptySessions: ViewingSession[] = [];
+      const emptyMemos: Memo[] = [];
+      const emptyTasks: Task[] = [];
+      
+      const cycleAnalysis = viewingCycleService.analyzeCycleProgress(emptySessions, emptyMemos, emptyTasks);
+      setCycleProgress(cycleAnalysis);
+      
+      console.log('[Dashboard] Data loaded - no sample data used');
+    } catch (error) {
+      console.error('[Dashboard] Failed to load dashboard data:', error);
+    }
   };
 
   const formatWatchTime = (minutes: number): string => {
