@@ -118,6 +118,33 @@ class LocalStorageService {
     }
   }
 
+  async getMemoById(id: string): Promise<ApiResponse<Memo>> {
+    try {
+      await this.initialize();
+      const userId = getCurrentUserId();
+      const memos = await database.getMemos(userId);
+      const memo = memos.find(m => m.id === id);
+      
+      if (!memo) {
+        throw new Error('Memo not found');
+      }
+      
+      return {
+        success: true,
+        data: this.formatMemo(memo),
+      };
+    } catch (error) {
+      console.error('Failed to get memo:', error);
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'メモが見つかりません',
+        },
+      };
+    }
+  }
+
   async createMemo(memoData: any): Promise<ApiResponse<Memo>> {
     try {
       await this.initialize();

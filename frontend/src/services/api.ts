@@ -165,6 +165,11 @@ class ApiService {
     }
     
     if (endpoint.includes(API_CONFIG.ENDPOINTS.MEMOS)) {
+      // Check if it's a specific memo request
+      const memoIdMatch = endpoint.match(/\/memos\/([^\/]+)$/);
+      if (memoIdMatch) {
+        return localStorageService.getMemoById(memoIdMatch[1]) as Promise<ApiResponse<T>>;
+      }
       const videoId = options?.params?.videoId;
       return localStorageService.getMemos(videoId) as Promise<ApiResponse<T>>;
     }

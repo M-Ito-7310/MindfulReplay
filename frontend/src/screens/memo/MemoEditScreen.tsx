@@ -41,7 +41,7 @@ export const MemoEditScreen: React.FC<MemoEditScreenProps> = ({ navigation, rout
       const response = await apiService.get(`${API_CONFIG.ENDPOINTS.MEMOS}/${memoId}`);
       
       if (response.success && response.data) {
-        setMemo(response.data.memo);
+        setMemo(response.data);
       }
     } catch (error) {
       Alert.alert(
