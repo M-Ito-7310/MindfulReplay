@@ -78,17 +78,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
       const reminders = notificationService.getTodaysReminders();
       setTodaysReminders(reminders);
       
-      // TODO: 実際のAPIからデータを取得する実装
-      // const videosResponse = await apiService.get('/videos');
-      // const memosResponse = await apiService.get('/memos');
-      // const tasksResponse = await apiService.get('/tasks');
+      // 実際のAPIからデータを取得
+      const [memosResponse, tasksResponse] = await Promise.all([
+        apiService.get<{ items: Memo[] }>('/memos'),
+        apiService.get<{ items: Task[] }>('/tasks'),
+      ]);
       
-      // 現在は空のデータでサイクル進捗を初期化
+      const memos = memosResponse.success ? memosResponse.data.items : [];
+      const tasks = tasksResponse.success ? tasksResponse.data.items : [];
+      
+      // 現在は視聴セッションがないため空配列
       const emptySessions: ViewingSession[] = [];
-      const emptyMemos: Memo[] = [];
-      const emptyTasks: Task[] = [];
       
-      const cycleAnalysis = viewingCycleService.analyzeCycleProgress(emptySessions, emptyMemos, emptyTasks);
+      const cycleAnalysis = viewingCycleService.analyzeCycleProgress(emptySessions, memos, tasks);
       setCycleProgress(cycleAnalysis);
       
       console.log('[Dashboard] Data loaded - no sample data used');

@@ -4,14 +4,18 @@ const getApiBaseUrl = (): string => {
   try {
     // 環境変数が設定されている場合はそれを使用
     if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-      console.log('[API Config] Using EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+      if (__DEV__) {
+        console.log('[API Config] Using EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+      }
       return process.env.EXPO_PUBLIC_API_URL;
     }
     
     // Web環境の場合（window とlocation の存在を安全にチェック）
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
-      console.log('[API Config] Web environment detected, hostname:', hostname);
+      if (__DEV__) {
+        console.log('[API Config] Web environment detected, hostname:', hostname);
+      }
       
       // ローカル開発環境の場合
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -23,18 +27,24 @@ const getApiBaseUrl = (): string => {
     }
     
     // Native環境の場合（デフォルト）
-    console.log('[API Config] Native environment detected, using local IP');
     // 環境変数からIPを取得、なければデフォルトIP
     const DEV_IP = process.env.EXPO_PUBLIC_DEV_IP || '192.168.1.10'; // 必要に応じて変更
     const apiUrl = `http://${DEV_IP}:3000/api`;
-    console.log('[API Config] Native API URL:', apiUrl);
+    if (__DEV__) {
+      console.log('[API Config] Native environment detected, using local IP');
+      console.log('[API Config] Native API URL:', apiUrl);
+    }
     return apiUrl;
   } catch (error) {
-    console.error('[API Config] Error in getApiBaseUrl:', error);
+    if (__DEV__) {
+      console.error('[API Config] Error in getApiBaseUrl:', error);
+    }
     // フォールバック: Native環境として扱う
     const DEV_IP = (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_DEV_IP) || '192.168.1.10';
     const fallbackUrl = `http://${DEV_IP}:3000/api`;
-    console.log('[API Config] Using fallback URL:', fallbackUrl);
+    if (__DEV__) {
+      console.log('[API Config] Using fallback URL:', fallbackUrl);
+    }
     return fallbackUrl;
   }
 };
@@ -42,14 +52,19 @@ const getApiBaseUrl = (): string => {
 // 動的にベースURLを取得する関数を作成
 const createApiConfig = () => {
   const baseUrl = getApiBaseUrl();
-  console.log('[API Config] Final BASE_URL:', baseUrl);
-  console.log('[API Config] Environment detection:', {
-    hasWindow: typeof window !== 'undefined',
-    isReactNative: typeof navigator !== 'undefined' && navigator.product === 'ReactNative',
-    hasProcess: typeof process !== 'undefined',
-    apiUrlConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL),
-    devIpConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_DEV_IP),
-  });
+  
+  // Development mode only logging
+  if (__DEV__) {
+    console.log('[API Config] Final BASE_URL:', baseUrl);
+    console.log('[API Config] Environment detection:', {
+      hasWindow: typeof window !== 'undefined',
+      isReactNative: typeof navigator !== 'undefined' && navigator.product === 'ReactNative',
+      hasProcess: typeof process !== 'undefined',
+      apiUrlConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL),
+      devIpConfigured: !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_DEV_IP),
+    });
+  }
+  
   return {
     BASE_URL: baseUrl,
     ENDPOINTS: {
