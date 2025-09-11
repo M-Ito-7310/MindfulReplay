@@ -1,37 +1,38 @@
 // API Configuration
+const DEV_IP = '192.168.1.10'; // 👈 実際のIPアドレスに変更してください
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3000',
+  BASE_URL: `http://${DEV_IP}:3000/api`,
   ENDPOINTS: {
     // Auth endpoints
-    LOGIN: '/api/auth/login',
-    REGISTER: '/api/auth/register',
-    REFRESH: '/api/auth/refresh',
-    LOGOUT: '/api/auth/logout',
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    REFRESH: '/auth/refresh',
+    LOGOUT: '/auth/logout',
     
     // Video endpoints
-    VIDEOS: '/api/videos',
-    VIDEO_DETAIL: (id: string) => `/api/videos/${id}`,
-    VIDEO_PREVIEW: '/api/videos/preview',
+    VIDEOS: '/videos',
+    VIDEO_DETAIL: (id: string) => `/videos/${id}`,
+    VIDEO_PREVIEW: '/videos/preview',
     
     // Memo endpoints
-    MEMOS: '/api/memos',
-    MEMO_DETAIL: (id: string) => `/api/memos/${id}`,
+    MEMOS: '/memos',
+    MEMO_DETAIL: (id: string) => `/memos/${id}`,
     
     // Task endpoints
-    TASKS: '/api/tasks',
-    TASK_DETAIL: (id: string) => `/api/tasks/${id}`,
-    TASK_STATS: '/api/tasks/stats',
-    TASK_OVERDUE: '/api/tasks/overdue',
-    TASK_UPCOMING: '/api/tasks/upcoming',
-    TASK_DASHBOARD: '/api/tasks/dashboard',
-    TASK_SEARCH: '/api/tasks/search',
-    TASK_COMPLETE: (id: string) => `/api/tasks/${id}/complete`,
-    TASK_REOPEN: (id: string) => `/api/tasks/${id}/reopen`,
-    TASK_FROM_MEMO: (memoId: string) => `/api/tasks/from-memo/${memoId}`,
+    TASKS: '/tasks',
+    TASK_DETAIL: (id: string) => `/tasks/${id}`,
+    TASK_STATS: '/tasks/stats',
+    TASK_OVERDUE: '/tasks/overdue',
+    TASK_UPCOMING: '/tasks/upcoming',
+    TASK_DASHBOARD: '/tasks/dashboard',
+    TASK_SEARCH: '/tasks/search',
+    TASK_COMPLETE: (id: string) => `/tasks/${id}/complete`,
+    TASK_REOPEN: (id: string) => `/tasks/${id}/reopen`,
+    TASK_FROM_MEMO: (memoId: string) => `/tasks/from-memo/${memoId}`,
     
     // Reminder endpoints
-    REMINDERS: '/api/reminders',
-    REMINDER_DETAIL: (id: string) => `/api/reminders/${id}`,
+    REMINDERS: '/reminders',
+    REMINDER_DETAIL: (id: string) => `/reminders/${id}`,
   },
   TIMEOUT: 10000, // 10 seconds
 };

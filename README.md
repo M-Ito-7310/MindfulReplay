@@ -145,6 +145,208 @@ curl http://localhost:3000/health
 - ✅ **メモ管理**: 基本機能（完全動作）
 - ✅ **YouTube API**: Mock機能付きで開発・テスト可能
 
+## 📱 スマートフォンでのテスト（Expo Go）
+
+### 📋 事前準備
+
+**1. スマートフォンにExpo Goアプリをインストール**
+- iPhone: [App Store](https://apps.apple.com/jp/app/expo-go/id982107779) 
+- Android: [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
+
+**2. 同一ネットワーク接続の確認**
+- 開発PCとスマートフォンが同じWi-Fiネットワークに接続されていることを確認
+
+### 🚀 IPアドレス指定での起動手順
+
+**1. 開発PCのIPアドレスを確認**
+```bash
+# Windows
+ipconfig
+
+# macOS/Linux  
+ifconfig
+# または
+ip addr show
+```
+
+**2. バックエンドサーバーをIPアドレス指定で起動**
+```bash
+cd backend
+npm run dev
+# サーバーが http://0.0.0.0:3000 で起動（全IPからアクセス可能）
+```
+
+**3. フロントエンドの設定を変更**
+`frontend/src/constants/api.ts` を編集：
+```typescript
+// 開発環境用のIPアドレス設定
+const DEV_IP = '192.168.1.100'; // 👈 実際のIPアドレスに変更
+
+export const API_CONFIG = {
+  BASE_URL: `http://${DEV_IP}:3000/api`,
+  // ... 他の設定
+};
+```
+
+**4. フロントエンドをIPアドレス指定で起動**
+```bash
+cd frontend
+
+# 基本の起動（推奨）
+npm start
+
+# Windows環境での場合
+npx expo start --port 8000
+
+# キャッシュクリアして起動
+npx expo start -c
+
+# 起動後、ターミナルに表示されるQRコードまたはURLを使用
+```
+
+### 📱 スマートフォンでのアクセス方法
+
+**方法1: QRコードスキャン**
+1. フロントエンド起動後に表示されるQRコードをExpo Goアプリでスキャン
+2. アプリが自動的に読み込まれる
+
+**方法2: 手動URL入力**
+1. Expo Goアプリの「Enter URL manually」を選択
+2. 表示されたURL（例: `exp://192.168.1.100:8000`）を入力
+
+**方法3: 同じネットワーク上での自動検出**
+1. Expo Goアプリを開く
+2. 「Recently in Development」セクションで開発中のアプリを確認
+3. プロジェクト名をタップして起動
+
+### 🔧 トラブルシューティング（スマートフォン接続）
+
+**アプリが見つからない場合:**
+```bash
+# Expoキャッシュをクリア
+cd frontend
+npx expo start -c
+
+# IPアドレスを明示的に指定（あなたのIPアドレスに変更）
+npx expo start --host 192.168.1.100
+
+# Windows環境での推奨起動方法
+npx expo start --port 8000 --clear
+```
+
+**接続エラーの場合:**
+1. **ファイアウォール設定の確認**
+   - Windows: ポート3000と8000を許可
+   - macOS: システム環境設定 > セキュリティ > ファイアウォール
+
+2. **ネットワーク設定の確認**
+   - 同じWi-Fiネットワークに接続されているか確認
+   - VPN接続を無効化
+
+3. **IPアドレスの再確認**
+   ```bash
+   # 現在のIPアドレスを確認
+   ping $(hostname -I | awk '{print $1}')  # Linux/macOS
+   ping %COMPUTERNAME%                      # Windows
+   ```
+
+**API接続エラーの場合:**
+```bash
+# スマートフォンからバックエンドAPIへの接続確認
+# ブラウザで http://[あなたのIP]:3000/health にアクセス
+# 例: http://192.168.1.100:3000/health
+```
+
+**Windows環境での特有の問題:**
+
+**1. 環境変数エラーの対処:**
+```bash
+# PowerShellの場合
+$env:EXPO_USE_FAST_REFRESH="false"; npm start
+
+# Command Promptの場合
+set EXPO_USE_FAST_REFRESH=false && npm start
+
+# または、直接npx expoコマンドを使用（推奨）
+npx expo start --port 8000
+```
+
+**2. @expo/ngrokエラーの対処:**
+```bash
+# ngrokパッケージを明示的にインストール（必要に応じて）
+npm install -g @expo/ngrok
+
+# または、トンネルを使わずに起動
+npx expo start --no-tunnel
+```
+
+**3. Expo SDK互換性エラーの対処:**
+```bash
+# SDK更新（Expo Go互換性確保）
+npx expo install expo@latest
+
+# 依存関係の自動修正
+npx expo install --fix
+
+# 依存関係競合の強制解決（必要に応じて）
+npm install --legacy-peer-deps
+```
+
+**4. app.jsonでのホスト設定:**
+```json
+{
+  "expo": {
+    // ... 他の設定
+    "packagerOpts": {
+      "host": "192.168.1.10"
+    }
+  }
+}
+```
+
+**5. metro.config.jsでのサーバー設定:**
+```javascript
+config.server = {
+  ...config.server,
+  host: '192.168.1.10', // 実際のIPアドレスに変更
+  port: 8000
+};
+```
+
+**6. IPアドレスの確認方法（Windows）:**
+```bash
+# コマンドプロンプトで
+ipconfig | findstr "IPv4"
+
+# PowerShellで
+Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -like "192.168.*"}
+```
+
+**⚠️ 重要な注意事項（SDK互換性）:**
+- Expo Goアプリのバージョンとプロジェクトで使用しているExpo SDKのバージョンが一致している必要があります
+- 互換性エラーが発生した場合は、上記の「Expo SDK互換性エラーの対処」を実行してください
+- 現在のプロジェクト: Expo SDK 54対応
+- 最新のExpo Goアプリを使用することを推奨します
+
+### 📝 開発時の推奨設定
+
+**frontend/src/constants/api.ts の設定例:**
+```typescript
+// 開発環境での推奨設定
+const isDevelopment = __DEV__;
+const DEV_IP = '192.168.1.100'; // 👈 あなたのIPアドレスに変更
+
+export const API_CONFIG = {
+  BASE_URL: isDevelopment 
+    ? `http://${DEV_IP}:3000/api`  // スマートフォン用
+    : 'http://localhost:3000/api', // Web用
+  TIMEOUT: 10000,
+  // ... 他の設定
+};
+```
+
+この設定により、WebブラウザとExpo Goアプリの両方で開発・テストが可能になります。
+
 ### 🔧 トラブルシューティング
 
 **ポート競合エラーの場合:**

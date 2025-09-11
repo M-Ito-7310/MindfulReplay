@@ -29,7 +29,8 @@
       "WebSearch",
       "WebFetch(domain:developers.google.com)",
       "Bash(npm run typecheck:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "WebFetch(domain:qiita.com)"
     ],
     "deny": [],
     "ask": []

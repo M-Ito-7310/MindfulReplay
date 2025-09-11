@@ -8,6 +8,7 @@ config.resolver.platforms = ['web', 'ios', 'android'];
 // Network configuration
 config.server = {
   ...config.server,
+  host: '192.168.1.10',
   enhanceMiddleware: (middleware) => {
     return (req, res, next) => {
       // Add CORS headers
