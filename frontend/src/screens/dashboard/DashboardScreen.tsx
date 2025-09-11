@@ -14,6 +14,7 @@ import { notificationService, ReminderData } from '@/services/notificationServic
 import { ProgressTracking } from '@/components/progress/ProgressTracking';
 import { recommendationService } from '@/services/recommendationService';
 import { viewingCycleService, CycleProgress } from '@/services/viewingCycleService';
+import { apiService } from '@/services/api';
 
 interface DashboardScreenProps {
   navigation?: any;
