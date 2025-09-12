@@ -6,6 +6,8 @@ import {
   Alert,
   SafeAreaView,
   TouchableOpacity,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { VideoPlayer } from '@/components/video';
 import { apiService } from '@/services/api';
@@ -28,8 +30,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const [isLoadingVideo, setIsLoadingVideo] = useState(true);
   const [isLoadingMemos, setIsLoadingMemos] = useState(true);
   const [isRefreshingMemos, setIsRefreshingMemos] = useState(false);
+  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
+  const isLandscape = dimensions.width > dimensions.height;
 
   const videoId = route?.params?.videoId;
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions(Dimensions.get('window'));
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription?.remove();
+  }, []);
 
   useEffect(() => {
     if (videoId) {
@@ -41,40 +54,29 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const loadVideo = async () => {
     if (!videoId) return;
 
+    // Simplified logging
     if (__DEV__) {
-      console.log('[VideoPlayerScreen] Loading video:', videoId);
+      console.log('[VideoPlayerScreen] Loading:', videoId);
     }
 
     setIsLoadingVideo(true);
     try {
       const response = await apiService.get(`${API_CONFIG.ENDPOINTS.VIDEOS}/${videoId}`);
       
-      if (__DEV__) {
-        console.log('[VideoPlayerScreen] Video API response:', response);
-      }
-      
       if (response.success && response.data) {
         const videoData = response.data.video || response.data;
         if (__DEV__) {
-          console.log('[VideoPlayerScreen] Video data loaded:', {
-            id: videoData.id,
-            title: videoData.title,
-            youtube_url: videoData.youtube_url,
-            youtube_id: videoData.youtube_id,
-            channel_name: videoData.channel_name,
-            duration: videoData.duration,
-            thumbnail_url: videoData.thumbnail_url
-          });
+          console.log('[VideoPlayerScreen] Loaded:', videoData.title?.substring(0, 30) + '...');
         }
         setVideo(videoData);
       } else {
         if (__DEV__) {
-          console.warn('[VideoPlayerScreen] API response not successful or no data:', response);
+          console.warn('[VideoPlayerScreen] Load failed');
         }
       }
     } catch (error) {
       if (__DEV__) {
-        console.error('[VideoPlayerScreen] Video load error:', error);
+        console.error('[VideoPlayerScreen] Load error:', error.message || error);
       }
       Alert.alert(
         'エラー',
@@ -211,18 +213,30 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, isLandscape && styles.containerLandscape]}>
+      {/* Header with Back Button - Hide in landscape mode for better viewing */}
+      {!isLandscape && (
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation?.goBack?.()}
+          >
+            <Text style={styles.backButtonText}>← 戻る</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>動画視聴</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+      )}
+
+      {/* Floating back button in landscape mode */}
+      {isLandscape && (
         <TouchableOpacity 
-          style={styles.backButton}
+          style={styles.floatingBackButton}
           onPress={() => navigation?.goBack?.()}
         >
-          <Text style={styles.backButtonText}>← 戻る</Text>
+          <Text style={styles.floatingBackButtonText}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>動画視聴</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      )}
 
       <VideoPlayer
         video={video}
@@ -243,6 +257,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  containerLandscape: {
+    backgroundColor: COLORS.BLACK,
   },
   header: {
     flexDirection: 'row',
@@ -298,5 +315,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  floatingBackButton: {
+    position: 'absolute',
+    top: Platform.select({
+      ios: 50,
+      android: 30,
+      default: 40
+    }),
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  floatingBackButtonText: {
+    color: COLORS.WHITE,
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });

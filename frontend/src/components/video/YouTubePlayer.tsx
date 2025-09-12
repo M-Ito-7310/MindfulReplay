@@ -91,10 +91,84 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   const webViewRef = useRef<WebView>(null);
   const [isReady, setIsReady] = useState(false);
   const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLoggedVideoIdRef = useRef<string | null>(null);
+  const lastLoggedMobileVideoRef = useRef<string | null>(null);
+  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
+    dimensions.width < dimensions.height ? 'portrait' : 'landscape'
+  );
 
-  const screenWidth = Dimensions.get('window').width;
-  const playerWidth = width || screenWidth - 32;
-  const playerHeight = height || (playerWidth * 9) / 16; // 16:9 aspect ratio
+  // Update orientation when window dimensions change
+  useEffect(() => {
+    const updateDimensions = () => {
+      const newDimensions = Dimensions.get('window');
+      setDimensions(newDimensions);
+      setOrientation(newDimensions.width < newDimensions.height ? 'portrait' : 'landscape');
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription?.remove();
+  }, []);
+
+  // Calculate optimal player dimensions based on orientation
+  const calculatePlayerDimensions = () => {
+    // Ensure we have valid dimensions
+    const screenWidth = dimensions.width || Dimensions.get('window').width;
+    const screenHeight = dimensions.height || Dimensions.get('window').height;
+    const aspectRatio = 16 / 9;
+    const minWidth = 200; // Minimum width for YouTube player
+    const minHeight = 200; // Minimum height for YouTube player
+    
+    if (orientation === 'landscape') {
+      // Landscape: Maximize screen usage
+      const padding = Platform.select({
+        ios: 8,
+        android: 0,
+        web: 8,
+        default: 8
+      });
+      
+      const maxWidth = width || Math.max(screenWidth - padding, minWidth);
+      const maxHeight = height || Math.max(screenHeight * 0.9, minHeight); // Use 90% of screen height
+      
+      // Calculate dimensions maintaining aspect ratio
+      let playerWidth = maxWidth;
+      let playerHeight = playerWidth / aspectRatio;
+      
+      // If calculated height exceeds max height, recalculate based on height
+      if (playerHeight > maxHeight) {
+        playerHeight = maxHeight;
+        playerWidth = playerHeight * aspectRatio;
+      }
+      
+      // Ensure minimum dimensions
+      playerWidth = Math.max(playerWidth, minWidth);
+      playerHeight = Math.max(playerHeight, minHeight);
+      
+      return { width: Math.floor(playerWidth), height: Math.floor(playerHeight) };
+    } else {
+      // Portrait: Optimize for width with appropriate padding
+      const padding = Platform.select({
+        ios: 32,
+        android: 24,
+        web: 32,
+        default: 32
+      });
+      
+      const maxWidth = width || Math.max(screenWidth - padding, minWidth);
+      const playerWidth = Math.max(maxWidth, minWidth);
+      const playerHeight = Math.max(height || (playerWidth * 9) / 16, minHeight);
+      
+      return { width: Math.floor(playerWidth), height: Math.floor(playerHeight) };
+    }
+  };
+
+  const { width: playerWidth, height: playerHeight } = calculatePlayerDimensions();
+  
+  // Only log errors for invalid dimensions
+  if (__DEV__ && (!playerWidth || !playerHeight)) {
+    console.error('[YouTubePlayer] Invalid dimensions:', playerWidth, playerHeight);
+  }
   
   // Optimized user agent for better YouTube compatibility
   const getUserAgent = (): string => {
@@ -134,54 +208,64 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   const generateHTML = (): string => {
     const cleanVideoId = extractVideoId(videoId);
     
-    if (__DEV__) {
-      console.log('[YouTubePlayer] Generating HTML player:', {
-        originalVideoId: videoId,
-        cleanVideoId,
-        platform: Platform.OS,
-        autoplay,
-        initialTime,
-        playerWidth,
-        playerHeight,
-        screenWidth
-      });
+    // Log only essential info when generating player
+    if (__DEV__ && videoId !== lastLoggedVideoIdRef.current) {
+      console.log('[YouTubePlayer] Init:', cleanVideoId, `${playerWidth}x${playerHeight}`, Platform.OS);
+      lastLoggedVideoIdRef.current = videoId;
     }
     
     return `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
             margin: 0;
             padding: 0;
             background: #000;
+            overflow: hidden;
+        }
+        body {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+        }
+        #player-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #player {
             width: 100%;
             height: 100%;
+            max-width: 100%;
+            max-height: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="player"></div>
+    <div id="player-container">
+        <div id="player"></div>
+    </div>
     
     <script>
         let player;
         let isPlayerReady = false;
         
         // Load YouTube IFrame API
-        console.log('[YouTubePlayer] Loading YouTube IFrame API for:', '${cleanVideoId}');
         const tag = document.createElement('script');
         tag.src = 'https://www.youtube.com/iframe_api';
-        tag.onload = function() {
-            console.log('[YouTubePlayer] YouTube IFrame API loaded successfully');
-        };
         tag.onerror = function() {
             console.error('[YouTubePlayer] Failed to load YouTube IFrame API');
         };
@@ -190,11 +274,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         
         // Initialize player when API is ready
         function onYouTubeIframeAPIReady() {
-            console.log('[YouTubePlayer] Initializing YouTube player:', {
-                videoId: '${cleanVideoId}',
-                autoplay: ${autoplay},
-                initialTime: ${initialTime}
-            });
             player = new YT.Player('player', {
                 width: '100%',
                 height: '100%',
@@ -223,7 +302,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         
         function onPlayerReady(event) {
             isPlayerReady = true;
-            console.log('[YouTubePlayer] Player ready for video:', '${cleanVideoId}');
             window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: 'ready'
             }));
@@ -336,11 +414,12 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
       }
       
       switch (data.type) {
+        case 'debug':
+          // Ignore debug messages unless needed
+          break;
+          
         case 'ready':
           setIsReady(true);
-          if (__DEV__) {
-            console.log('[YouTubePlayer] Player is ready for video:', videoId);
-          }
           onReady?.();
           break;
           
@@ -349,9 +428,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
           break;
           
         case 'stateChange':
-          if (__DEV__) {
-            console.log('[YouTubePlayer] State changed to:', data.state, 'for video:', videoId);
-          }
           onPlaybackStateChange?.(data.state);
           break;
           
@@ -430,13 +506,22 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         videoId,
         cleanVideoId,
         iframeSrc,
+        orientation,
+        dimensions,
         playerWidth,
         playerHeight
       });
     }
     
     return (
-      <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
+      <View style={[
+        styles.container, 
+        { 
+          width: playerWidth, 
+          height: playerHeight,
+          borderRadius: orientation === 'landscape' ? 0 : 8
+        }
+      ]}>
         <iframe
           src={iframeSrc}
           style={{
@@ -444,6 +529,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
             height: '100%',
             border: 'none',
             backgroundColor: COLORS.BLACK,
+            display: 'block',
           }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -457,33 +543,28 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   }
 
   // Mobile implementation using WebView
-  if (__DEV__) {
-    console.log('[YouTubePlayer] Mobile WebView implementation:', {
-      videoId,
-      platform: Platform.OS,
-      playerWidth,
-      playerHeight,
-      userAgent: getUserAgent(),
-      webViewSettings: {
-        allowsInlineMediaPlayback: true,
-        mediaPlaybackRequiresUserAction: false,
-        javaScriptEnabled: true,
-        domStorageEnabled: true,
-        mixedContentMode: Platform.OS === 'android' ? 'compatibility' : 'never',
-        allowsFullscreenVideo: true,
-        thirdPartyCookiesEnabled: true,
-        sharedCookiesEnabled: true,
-        allowsProtectedMedia: true
-      }
-    });
+  // Minimal mobile logging - only log once per video
+  if (__DEV__ && lastLoggedMobileVideoRef.current !== videoId) {
+    console.log('[YouTubePlayer] Mobile WebView:', videoId, `${playerWidth}x${playerHeight}`);
+    lastLoggedMobileVideoRef.current = videoId;
   }
   
   return (
-    <View style={[styles.container, { width: playerWidth, height: playerHeight }]}>
+    <View style={[
+      styles.container, 
+      { 
+        width: playerWidth, 
+        height: playerHeight,
+        borderRadius: orientation === 'landscape' ? 0 : 8,
+        minHeight: 200,
+        minWidth: 200
+      }
+    ]}>
       <WebView
+        key={`youtube-player-${videoId}`}
         ref={webViewRef}
         source={{ html: generateHTML() }}
-        style={styles.webView}
+        style={[styles.webView, { width: playerWidth, height: playerHeight }]}
         onMessage={handleMessage}
         userAgent={getUserAgent()}
         allowsInlineMediaPlayback={true}
@@ -498,6 +579,14 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         allowsProtectedMedia={true}
         allowFileAccessFromFileURLs={true}
         allowUniversalAccessFromFileURLs={true}
+        scalesPageToFit={Platform.OS === 'android'}
+        scrollEnabled={false}
+        bounces={false}
+        originWhitelist={['*']}
+        injectedJavaScript={`
+          // Minimal injection
+          true;
+        `}
         onError={(syntheticEvent) => {
           const { nativeEvent } = syntheticEvent;
           if (__DEV__) {
@@ -507,14 +596,10 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
           onError?.('WebView failed to load');
         }}
         onLoadStart={() => {
-          if (__DEV__) {
-            console.log('[YouTubePlayer] WebView load started for video:', videoId);
-          }
+          // Remove verbose loading logs
         }}
         onLoadEnd={() => {
-          if (__DEV__) {
-            console.log('[YouTubePlayer] WebView load ended for video:', videoId);
-          }
+          // Remove verbose loading logs
         }}
       />
     </View>
@@ -527,11 +612,15 @@ YouTubePlayer.displayName = 'YouTubePlayer';
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.BLACK,
-    borderRadius: 8,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    minWidth: 200,
   },
   webView: {
     flex: 1,
     backgroundColor: COLORS.BLACK,
+    opacity: 0.99, // iOS WebView rendering workaround
   },
 });

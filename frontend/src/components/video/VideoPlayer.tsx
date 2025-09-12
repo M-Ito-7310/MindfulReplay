@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { YouTubePlayer } from './YouTubePlayer';
 import { MemoList } from '@/components/memo';
@@ -39,6 +41,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playbackState, setPlaybackState] = useState<'playing' | 'paused' | 'ended'>('paused');
   const [showMemos, setShowMemos] = useState(true);
   const playerRef = useRef<any>(null);
+  const lastRenderedVideoRef = useRef<string | null>(null);
+  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(
+    dimensions.width < dimensions.height ? 'portrait' : 'landscape'
+  );
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      const newDimensions = Dimensions.get('window');
+      setDimensions(newDimensions);
+      setOrientation(newDimensions.width < newDimensions.height ? 'portrait' : 'landscape');
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription?.remove();
+  }, []);
 
   const extractVideoId = (url?: string): string => {
     if (!url) return '';
@@ -64,25 +82,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
-    if (__DEV__ && Math.floor(time) % 30 === 0) { // Log every 30 seconds to avoid spam
-      console.log('[VideoPlayer] Time update:', {
-        videoId: video?.id,
-        youtube_id: video?.youtube_id,
-        currentTime: Math.floor(time),
-        title: video?.title
-      });
-    }
+    // Removed excessive time update logs
   };
 
   const handlePlaybackStateChange = (state: 'playing' | 'paused' | 'ended') => {
-    if (__DEV__) {
-      console.log('[VideoPlayer] Playback state changed:', {
-        videoId: video?.id,
-        youtube_id: video?.youtube_id,
-        previousState: playbackState,
-        newState: state,
-        title: video?.title
-      });
+    if (__DEV__ && state !== playbackState) {
+      console.log('[VideoPlayer] State:', playbackState, '→', state);
     }
     setPlaybackState(state);
   };
@@ -101,13 +106,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const getVideoId = () => {
     const videoId = extractVideoId(video?.youtube_url || video?.youtube_id);
     
-    if (__DEV__) {
-      console.log('[VideoPlayer] Video ID extraction:', {
-        youtube_url: video?.youtube_url,
-        youtube_id: video?.youtube_id,
-        extracted_id: videoId,
-        video_title: video?.title
-      });
+    // Only log extraction issues
+    if (__DEV__ && !videoId) {
+      console.warn('[VideoPlayer] Failed to extract video ID from:', video?.youtube_url, video?.youtube_id);
     }
     
     return videoId;
@@ -121,24 +122,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const generalMemos = memos
     .filter(memo => memo.timestamp_sec === undefined || memo.timestamp_sec === null);
 
-  if (__DEV__) {
-    console.log('[VideoPlayer] Rendering with video data:', {
-      hasVideo: !!video,
-      videoId: video?.id,
-      title: video?.title,
-      youtube_url: video?.youtube_url,
-      youtube_id: video?.youtube_id,
-      channel_name: video?.channel_name,
-      description_length: video?.description?.length || 0,
-      thumbnail_url: video?.thumbnail_url,
-      memos_count: memos.length
-    });
+  // Only log essential rendering info once
+  if (__DEV__ && video && lastRenderedVideoRef.current !== video.id) {
+    console.log('[VideoPlayer] Render:', video.id, video.title?.substring(0, 30) + '...');
+    lastRenderedVideoRef.current = video.id;
   }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Video Player */}
-      <View style={styles.playerContainer}>
+      <View style={[
+        styles.playerContainer, 
+        orientation === 'landscape' ? styles.playerContainerLandscape : styles.playerContainerPortrait
+      ]}>
         <YouTubePlayer
           ref={playerRef}
           videoId={getVideoId()}
@@ -146,24 +142,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onPlaybackStateChange={handlePlaybackStateChange}
           onError={(error) => {
             if (__DEV__) {
-              console.error('[VideoPlayer] YouTube player error:', {
-                videoId: video?.id,
-                youtube_url: video?.youtube_url,
-                youtube_id: video?.youtube_id,
-                extractedId: getVideoId(),
-                error,
-                title: video?.title
-              });
+              console.error('[VideoPlayer] Player error:', getVideoId(), error);
             }
           }}
           onReady={() => {
             if (__DEV__) {
-              console.log('[VideoPlayer] YouTube player ready:', {
-                videoId: video?.id,
-                youtube_url: video?.youtube_url,
-                extractedId: getVideoId(),
-                title: video?.title
-              });
+              console.log('[VideoPlayer] Player ready:', getVideoId());
             }
           }}
           autoplay={false}
@@ -288,7 +272,22 @@ const styles = StyleSheet.create({
   playerContainer: {
     backgroundColor: COLORS.BLACK,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerContainerPortrait: {
     paddingVertical: SPACING.MD,
+    paddingHorizontal: SPACING.MD,
+  },
+  playerContainerLandscape: {
+    paddingVertical: SPACING.SM,
+    paddingHorizontal: SPACING.SM,
+    // In landscape mode, use more screen space
+    flex: Platform.select({
+      ios: undefined,
+      android: undefined,
+      web: undefined,
+      default: 1
+    }),
   },
   videoInfo: {
     padding: SPACING.MD,
