@@ -101,6 +101,11 @@ export const VideoListScreen: React.FC<VideoListScreenProps> = ({ navigation }) 
         <Text style={styles.videoTitle} numberOfLines={2}>
           {item.title}
         </Text>
+        {item.description && (
+          <Text style={styles.videoDescription} numberOfLines={5}>
+            {item.description}
+          </Text>
+        )}
         <Text style={styles.channelName} numberOfLines={1}>
           {item.channel_name}
         </Text>
@@ -221,6 +226,12 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
     color: COLORS.TEXT_PRIMARY,
     marginBottom: SPACING.XS,
+  },
+  videoDescription: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SPACING.XS,
+    lineHeight: TYPOGRAPHY.FONT_SIZE.SM * 1.4,
   },
   channelName: {
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,

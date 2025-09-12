@@ -148,8 +148,8 @@ export const MemoCreateScreen: React.FC<MemoCreateScreenProps> = ({ navigation, 
         )}
       </View>
       <View style={styles.videoInfo}>
-        <Text style={styles.videoTitle}>{item.title}</Text>
-        <Text style={styles.videoDescription}>{item.description}</Text>
+        <Text style={styles.videoTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={styles.videoDescription} numberOfLines={5}>{item.description}</Text>
         <Text style={styles.videoDuration}>{formatDuration(item.duration || 0)}</Text>
       </View>
     </TouchableOpacity>
@@ -190,7 +190,7 @@ export const MemoCreateScreen: React.FC<MemoCreateScreenProps> = ({ navigation, 
               )}
             </View>
             <View style={styles.selectedVideoInfo}>
-              <Text style={styles.selectedVideoTitle}>{selectedVideo.title || 'タイトルなし'}</Text>
+              <Text style={styles.selectedVideoTitle} numberOfLines={2}>{selectedVideo.title || 'タイトルなし'}</Text>
               {!videoId && (
                 <TouchableOpacity onPress={openVideoSelector}>
                   <Text style={styles.changeVideoText}>動画を変更する</Text>
