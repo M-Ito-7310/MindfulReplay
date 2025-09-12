@@ -306,20 +306,47 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                 type: 'ready'
             }));
             
-            // Start time update interval
-            setInterval(() => {
+            // Smart time update with state-based intervals
+            let lastTime = -1;
+            window.timeUpdateInterval = null;
+            
+            function updateTime() {
                 if (player && isPlayerReady) {
                     try {
                         const currentTime = player.getCurrentTime();
-                        window.ReactNativeWebView.postMessage(JSON.stringify({
-                            type: 'timeUpdate',
-                            currentTime: currentTime
-                        }));
+                        const playerState = player.getPlayerState();
+                        
+                        // Only send updates if time actually changed
+                        const roundedTime = Math.floor(currentTime);
+                        if (roundedTime !== lastTime) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({
+                                type: 'timeUpdate',
+                                currentTime: currentTime
+                            }));
+                            lastTime = roundedTime;
+                        }
+                        
+                        // Adjust interval based on playback state
+                        const isPlaying = playerState === YT.PlayerState.PLAYING;
+                        const nextInterval = isPlaying ? 1000 : 5000; // 1s when playing, 5s when paused
+                        
+                        if (window.timeUpdateInterval) {
+                            clearTimeout(window.timeUpdateInterval);
+                        }
+                        window.timeUpdateInterval = setTimeout(updateTime, nextInterval);
+                        
                     } catch (e) {
-                        // Player might not be ready
+                        // Player might not be ready, retry in 1 second
+                        if (window.timeUpdateInterval) {
+                            clearTimeout(window.timeUpdateInterval);
+                        }
+                        window.timeUpdateInterval = setTimeout(updateTime, 1000);
                     }
                 }
-            }, 1000);
+            }
+            
+            // Start the smart update cycle
+            updateTime();
         }
         
         function onPlayerStateChange(event) {
@@ -334,6 +361,11 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                     break;
                 case YT.PlayerState.ENDED:
                     state = 'ended';
+                    // Stop time updates when video ends
+                    if (window.timeUpdateInterval) {
+                        clearTimeout(window.timeUpdateInterval);
+                        window.timeUpdateInterval = null;
+                    }
                     break;
             }
             
@@ -403,14 +435,9 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
     try {
       const data = JSON.parse(event.nativeEvent.data);
       
-      if (__DEV__) {
-        console.log('[YouTubePlayer] Received message:', {
-          type: data.type,
-          videoId,
-          platform: Platform.OS,
-          ...(data.type === 'error' && { errorCode: data.errorCode, error: data.error }),
-          ...(data.type === 'stateChange' && { state: data.state })
-        });
+      // Log only important messages, skip timeUpdate spam
+      if (__DEV__ && data.type !== 'timeUpdate') {
+        console.log('[YouTubePlayer]', data.type, ':', videoId, data.state || data.error || '');
       }
       
       switch (data.type) {
