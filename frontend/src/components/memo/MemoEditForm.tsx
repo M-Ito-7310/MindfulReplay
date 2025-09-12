@@ -219,17 +219,12 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
 
   const layoutStyles = getLayoutStyles();
 
-  // Simplified wrapper component (no card design)
-  const CardWrapper: React.FC<{ children: React.ReactNode; title?: string }> = ({ children }) => {
-    return <>{children}</>;
-  };
 
   return (
     <ScrollView style={[styles.container]} showsVerticalScrollIndicator={false}>
       <View style={[styles.form, { padding: layoutStyles.layout.formPadding }]}>
-        <CardWrapper title="基本設定">
-          {/* テンプレート選択 */}
-          <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+        {/* テンプレート選択 */}
+        <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
             <Text style={[styles.label, { 
               fontSize: layoutStyles.typography.fontSize.md,
               marginBottom: layoutStyles.layout.labelSpacing,
@@ -369,9 +364,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               </View>
             )}
           </View>
-        </CardWrapper>
-
-        <CardWrapper title="メモ内容">
           <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
             <Text style={[styles.label, { 
               fontSize: layoutStyles.typography.fontSize.md,
@@ -394,10 +386,8 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               editable={!isLoading}
             />
           </View>
-        </CardWrapper>
 
         {showTimestamp && (
-          <CardWrapper title="タイムスタンプ設定">
             <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
               <View style={[styles.timestampHeader, { marginBottom: layoutStyles.layout.labelSpacing }]}>
                 <Text style={[styles.label, { 
@@ -533,12 +523,10 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               </View>
             )}
             </View>
-          </CardWrapper>
         )}
 
         {/* タスク提案機能 */}
         {content.trim() && memoType === 'action' && (
-          <CardWrapper title="タスク提案">
             <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
               <Button
                 title="💡 このメモからタスクを提案"
@@ -552,7 +540,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
                 }}
               />
             </View>
-          </CardWrapper>
         )}
 
         <View style={[styles.actions, {
