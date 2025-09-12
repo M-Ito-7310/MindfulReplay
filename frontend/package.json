@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start --port 8000",
+    "start": "expo start --port 8000 --host lan",
     "android": "expo start --android --port 8000",
     "ios": "expo start --ios --port 8000",
-    "web": "expo start --web --port 8000",
+    "web": "expo start --web --port 8000 --host lan",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "jest"
