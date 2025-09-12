@@ -21,7 +21,7 @@ interface VideoPlayerProps {
   onMemoEdit?: (memo: Memo) => void;
   onMemoDelete?: (memo: Memo) => void;
   onMemoConvertToTask?: (memo: Memo) => void;
-  onAddMemo?: (timestamp?: number) => void;
+  onAddMemo?: (timestamp?: number, mode?: 'auto' | 'manual' | 'none') => void;
   onRefreshMemos?: () => void;
   isRefreshingMemos?: boolean;
   onPlaybackStateChange?: (state: 'playing' | 'paused' | 'ended') => void;
@@ -100,7 +100,7 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
     if (playerRef.current && playbackState === 'playing') {
       playerRef.current.pause();
     }
-    onAddMemo?.(Math.floor(currentTime));
+    onAddMemo?.(Math.floor(currentTime), 'auto');
   };
 
   const handleMemoJump = (memo: Memo) => {
@@ -300,7 +300,7 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
                   </Text>
                   <Button
                     title="最初のメモを追加"
-                    onPress={() => onAddMemo?.()}
+                    onPress={() => onAddMemo?.(undefined, 'manual')}
                     style={styles.emptyMemosButton}
                   />
                 </View>

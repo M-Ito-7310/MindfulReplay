@@ -34,6 +34,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [memoModalTimestamp, setMemoModalTimestamp] = useState<number | undefined>();
+  const [memoModalMode, setMemoModalMode] = useState<'auto' | 'manual' | 'none'>('manual');
   const [wasPlayingBeforeMemo, setWasPlayingBeforeMemo] = useState(false);
   const [currentPlaybackState, setCurrentPlaybackState] = useState<'playing' | 'paused' | 'ended'>('paused');
 
@@ -184,16 +185,18 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
     }
   };
 
-  const handleAddMemo = (timestamp?: number) => {
+  const handleAddMemo = (timestamp?: number, mode: 'auto' | 'manual' | 'none' = 'manual') => {
     // Remember if video was playing before memo modal
     setWasPlayingBeforeMemo(currentPlaybackState === 'playing');
     setMemoModalTimestamp(timestamp);
+    setMemoModalMode(mode);
     setShowMemoModal(true);
   };
 
   const handleMemoModalClose = () => {
     setShowMemoModal(false);
     setMemoModalTimestamp(undefined);
+    setMemoModalMode('manual');
     
     // Resume playback if it was playing before memo modal
     if (wasPlayingBeforeMemo && videoPlayerRef.current) {
@@ -286,6 +289,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
           onMemoCreated={handleMemoCreated}
           video={video}
           timestamp={memoModalTimestamp}
+          timestampMode={memoModalMode}
         />
       )}
     </SafeAreaView>

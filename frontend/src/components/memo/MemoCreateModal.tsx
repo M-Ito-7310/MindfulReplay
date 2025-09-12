@@ -16,12 +16,15 @@ import { API_CONFIG } from '@/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 import { Video, MemoForm, Memo } from '@/types';
 
+type TimestampMode = 'auto' | 'manual' | 'none';
+
 interface MemoCreateModalProps {
   visible: boolean;
   onClose: () => void;
   onMemoCreated: (memo: Memo) => void;
   video: Video;
   timestamp?: number;
+  timestampMode?: TimestampMode;
 }
 
 export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
@@ -30,6 +33,7 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
   onMemoCreated,
   video,
   timestamp,
+  timestampMode = 'manual',
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -119,11 +123,6 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
             <Text style={styles.videoTitle} numberOfLines={2}>
               {video.title || 'タイトル不明'}
             </Text>
-            {timestamp !== undefined && (
-              <Text style={styles.timestampInfo}>
-                時刻: {formatTime(timestamp)}
-              </Text>
-            )}
           </View>
         </View>
 
@@ -134,7 +133,9 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             isLoading={isLoading}
-            showTimestamp={true}
+            showTimestamp={timestampMode !== 'none'}
+            timestampMode={timestampMode}
+            timestampLocked={timestampMode === 'auto'}
           />
         </ScrollView>
       </KeyboardAvoidingView>
