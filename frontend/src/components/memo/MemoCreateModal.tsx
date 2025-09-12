@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MemoEditForm } from './MemoEditForm';
+import { useLayoutTheme } from '@/contexts/LayoutThemeContext';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
@@ -36,6 +37,7 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
   timestampMode = 'manual',
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { getLayoutStyles } = useLayoutTheme();
 
   const handleSubmit = async (data: MemoForm) => {
     setIsLoading(true);
@@ -95,6 +97,8 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const layoutStyles = getLayoutStyles();
+
   return (
     <Modal
       visible={visible}
@@ -103,27 +107,47 @@ export const MemoCreateModal: React.FC<MemoCreateModalProps> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[styles.container, { padding: layoutStyles.layout.containerSpacing }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>メモを追加</Text>
+        <View style={[styles.header, { 
+          paddingTop: Platform.select({
+            ios: layoutStyles.spacing.lg,
+            android: 0,
+            default: layoutStyles.spacing.lg,
+          }),
+          paddingHorizontal: layoutStyles.spacing.md,
+          paddingBottom: layoutStyles.spacing.md,
+        }]}>
+          <View style={[styles.headerContent, { marginBottom: layoutStyles.spacing.sm }]}>
+            <Text style={[styles.headerTitle, { 
+              fontSize: layoutStyles.typography.fontSize.lg,
+              fontWeight: layoutStyles.typography.fontWeight.SEMIBOLD,
+            }]}>メモを追加</Text>
             <TouchableOpacity
-              style={styles.closeButton}
+              style={[styles.closeButton, {
+                width: layoutStyles.layout.buttonHeight * 0.7,
+                height: layoutStyles.layout.buttonHeight * 0.7,
+                borderRadius: (layoutStyles.layout.buttonHeight * 0.7) / 2,
+              }]}
               onPress={onClose}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { fontSize: layoutStyles.typography.fontSize.lg }]}>✕</Text>
             </TouchableOpacity>
           </View>
           
           {/* Video Info */}
-          <View style={styles.videoInfo}>
-            <Text style={styles.videoTitle} numberOfLines={2}>
+          <View style={[styles.videoInfo, { paddingVertical: layoutStyles.spacing.sm }]}>
+            <Text style={[styles.videoTitle, { 
+              fontSize: layoutStyles.typography.fontSize.md,
+              lineHeight: layoutStyles.typography.fontSize.md * layoutStyles.typography.lineHeight.normal,
+              marginBottom: layoutStyles.spacing.xs,
+            }]} numberOfLines={2}>
               {video.title || 'タイトル不明'}
             </Text>
           </View>
+
         </View>
 
         {/* Form Content */}

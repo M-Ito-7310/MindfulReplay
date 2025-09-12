@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, SafeAreaView } from 'react-native';
 import { LoginScreen, SignupScreen, MainScreen } from '@/screens';
 import { authService } from '@/services/auth';
+import { LayoutThemeProvider } from '@/contexts/LayoutThemeContext';
 
 type AppScreen = 'Login' | 'Signup' | 'Main';
 
@@ -69,10 +70,12 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {renderScreen()}
-      <StatusBar style="auto" />
-    </SafeAreaView>
+    <LayoutThemeProvider>
+      <SafeAreaView style={styles.container}>
+        {renderScreen()}
+        <StatusBar style="auto" />
+      </SafeAreaView>
+    </LayoutThemeProvider>
   );
 }
 

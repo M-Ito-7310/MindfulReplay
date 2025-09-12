@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Button, Input } from '@/components/common';
+import { useLayoutTheme } from '@/contexts/LayoutThemeContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 import { MemoForm, Memo } from '@/types';
 
@@ -43,6 +44,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
   const [currentTimestampMode, setCurrentTimestampMode] = useState<TimestampMode>(timestampMode);
   const [timestampEnabled, setTimestampEnabled] = useState(timestampMode !== 'none');
+  const { getLayoutStyles } = useLayoutTheme();
 
   useEffect(() => {
     const timestamp = memo?.timestamp_sec || initialTimestamp;
@@ -214,155 +216,250 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
     }
   };
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.form}>
-        {/* テンプレート選択 */}
-        <View style={styles.field}>
-          <Text style={styles.label}>メモの種類</Text>
-          <View style={styles.templateRow}>
-            {(['insight', 'action', 'question', 'summary'] as const).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.templateButton,
-                  memoType === type && styles.templateButtonActive,
-                ]}
-                onPress={() => applyTemplate(type)}
-                disabled={isLoading}
-              >
-                <Text style={[
-                  styles.templateButtonText,
-                  memoType === type && styles.templateButtonTextActive,
-                ]}>
-                  {getMemoTypeLabel(type)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+  const layoutStyles = getLayoutStyles();
 
-        {/* 重要度選択 */}
-        <View style={styles.field}>
-          <Text style={styles.label}>重要度</Text>
-          <TouchableOpacity
-            style={styles.importanceDropdown}
-            onPress={() => setShowImportanceOptions(!showImportanceOptions)}
-            disabled={isLoading}
-          >
-            <Text style={styles.importanceDropdownText}>
-              {getImportanceLabel(importance)}
-            </Text>
-            <Text style={styles.dropdownArrow}>
-              {showImportanceOptions ? '▲' : '▼'}
-            </Text>
-          </TouchableOpacity>
-          
-          {showImportanceOptions && (
-            <View style={styles.importanceOptions}>
-              {[1, 2, 3, 4, 5].map((level, index) => (
+  // Simplified wrapper component (no card design)
+  const CardWrapper: React.FC<{ children: React.ReactNode; title?: string }> = ({ children }) => {
+    return <>{children}</>;
+  };
+
+  return (
+    <ScrollView style={[styles.container]} showsVerticalScrollIndicator={false}>
+      <View style={[styles.form, { padding: layoutStyles.layout.formPadding }]}>
+        <CardWrapper title="基本設定">
+          {/* テンプレート選択 */}
+          <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+            <Text style={[styles.label, { 
+              fontSize: layoutStyles.typography.fontSize.md,
+              marginBottom: layoutStyles.layout.labelSpacing,
+              fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
+            }]}>メモの種類</Text>
+            <View style={[styles.templateRow, { gap: layoutStyles.layout.buttonSpacing }]}>
+              {(['insight', 'action', 'question', 'summary'] as const).map((type) => (
                 <TouchableOpacity
-                  key={level}
+                  key={type}
                   style={[
-                    styles.importanceOption,
-                    importance === level && styles.importanceOptionActive,
-                    index === 4 && styles.importanceOptionLast, // 最後の要素
+                    styles.templateButton,
+                    {
+                      height: layoutStyles.layout.buttonHeight * 0.8,
+                      paddingHorizontal: layoutStyles.spacing.sm,
+                      borderRadius: layoutStyles.layout.buttonBorderRadius,
+                    },
+                    memoType === type && styles.templateButtonActive,
                   ]}
-                  onPress={() => {
-                    setImportance(level as 1 | 2 | 3 | 4 | 5);
-                    setShowImportanceOptions(false);
-                  }}
+                  onPress={() => applyTemplate(type)}
                   disabled={isLoading}
                 >
                   <Text style={[
-                    styles.importanceOptionText,
-                    importance === level && styles.importanceOptionTextActive,
+                    styles.templateButtonText,
+                    { fontSize: layoutStyles.typography.fontSize.sm },
+                    memoType === type && styles.templateButtonTextActive,
                   ]}>
-                    {getImportanceLabel(level)}
+                    {getMemoTypeLabel(type)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-          )}
-        </View>
+          </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>メモ内容 *</Text>
-          <TextInput
-            style={styles.textArea}
-            value={content}
-            onChangeText={setContent}
-            placeholder="視聴中の気づきやメモを記録しましょう..."
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-            editable={!isLoading}
-          />
-        </View>
+          {/* 重要度選択 */}
+          <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+            <Text style={[styles.label, { 
+              fontSize: layoutStyles.typography.fontSize.md,
+              marginBottom: layoutStyles.layout.labelSpacing,
+              fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
+            }]}>重要度</Text>
+            <TouchableOpacity
+              style={[styles.importanceDropdown, {
+                minHeight: layoutStyles.layout.buttonHeight * 1.2,
+                paddingHorizontal: layoutStyles.spacing.sm,
+                paddingVertical: layoutStyles.spacing.sm,
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+              }]}
+              onPress={() => setShowImportanceOptions(!showImportanceOptions)}
+              disabled={isLoading}
+            >
+              <Text style={[styles.importanceDropdownText, { 
+                fontSize: layoutStyles.typography.fontSize.sm,
+                lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                flex: 1,
+                flexWrap: 'wrap',
+              }]} numberOfLines={2}>
+                {getImportanceLabel(importance)}
+              </Text>
+              <Text style={[styles.dropdownArrow, { fontSize: layoutStyles.typography.fontSize.sm }]}>
+                {showImportanceOptions ? '▲' : '▼'}
+              </Text>
+            </TouchableOpacity>
+            
+            {showImportanceOptions && (
+              <View style={[styles.importanceOptions, { 
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+                marginTop: layoutStyles.spacing.xs,
+              }]}>
+                {[1, 2, 3, 4, 5].map((level, index) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[
+                      styles.importanceOption,
+                      {
+                        padding: layoutStyles.spacing.md,
+                      },
+                      importance === level && styles.importanceOptionActive,
+                      index === 4 && styles.importanceOptionLast, // 最後の要素
+                    ]}
+                    onPress={() => {
+                      setImportance(level as 1 | 2 | 3 | 4 | 5);
+                      setShowImportanceOptions(false);
+                    }}
+                    disabled={isLoading}
+                  >
+                    <Text style={[
+                      styles.importanceOptionText,
+                      { 
+                        fontSize: layoutStyles.typography.fontSize.sm,
+                        lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                      },
+                      importance === level && styles.importanceOptionTextActive,
+                    ]}>
+                      {getImportanceLabel(level)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </CardWrapper>
+
+        <CardWrapper title="メモ内容">
+          <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+            <Text style={[styles.label, { 
+              fontSize: layoutStyles.typography.fontSize.md,
+              marginBottom: layoutStyles.layout.labelSpacing,
+              fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
+            }]}>メモ内容 *</Text>
+            <TextInput
+              style={[styles.textArea, {
+                padding: layoutStyles.layout.inputPadding,
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+                fontSize: layoutStyles.typography.fontSize.md,
+                minHeight: layoutStyles.typography.fontSize.md * layoutStyles.typography.lineHeight.normal * 8,
+              }]}
+              value={content}
+              onChangeText={setContent}
+              placeholder="視聴中の気づきやメモを記録しましょう..."
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+              editable={!isLoading}
+            />
+          </View>
+        </CardWrapper>
 
         {showTimestamp && (
-          <View style={styles.field}>
-            <View style={styles.timestampHeader}>
-              <Text style={styles.label}>動画のタイムスタンプ</Text>
-              <TouchableOpacity
-                style={styles.timestampToggle}
-                onPress={toggleTimestampEnabled}
-                disabled={isLoading}
-              >
-                <Text style={[
-                  styles.timestampToggleText,
-                  !timestampEnabled && styles.timestampToggleTextDisabled
-                ]}>
-                  {timestampEnabled ? '🕒 有効' : '⏸️ 無効'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <CardWrapper title="タイムスタンプ設定">
+            <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+              <View style={[styles.timestampHeader, { marginBottom: layoutStyles.layout.labelSpacing }]}>
+                <Text style={[styles.label, { 
+                  fontSize: layoutStyles.typography.fontSize.md,
+                  marginBottom: 0,
+                  fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
+                }]}>動画のタイムスタンプ</Text>
+                <TouchableOpacity
+                  style={[styles.timestampToggle, {
+                    paddingHorizontal: layoutStyles.spacing.sm,
+                    paddingVertical: layoutStyles.spacing.xs,
+                    borderRadius: layoutStyles.layout.buttonBorderRadius,
+                  }]}
+                  onPress={toggleTimestampEnabled}
+                  disabled={isLoading}
+                >
+                  <Text style={[
+                    styles.timestampToggleText,
+                    { fontSize: layoutStyles.typography.fontSize.sm },
+                    !timestampEnabled && styles.timestampToggleTextDisabled
+                  ]}>
+                    {timestampEnabled ? '🕒 有効' : '⏸️ 無効'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
             {timestampEnabled ? (
               <>
                 {currentTimestampMode === 'auto' && timestampLocked ? (
                   // Auto mode: Read-only display
-                  <View style={styles.timestampReadOnly}>
-                    <Text style={styles.timestampAutoValue}>
+                  <View style={[styles.timestampReadOnly, {
+                    borderRadius: layoutStyles.layout.inputBorderRadius,
+                    padding: layoutStyles.layout.inputPadding,
+                  }]}>
+                    <Text style={[styles.timestampAutoValue, {
+                      fontSize: layoutStyles.typography.fontSize.md,
+                    }]}>
                       📍 {formatTime(formatTimestamp(timestampMinutes, timestampSeconds) || 0)} (自動設定)
                     </Text>
                     <TouchableOpacity
-                      style={styles.editTimestampButton}
+                      style={[styles.editTimestampButton, {
+                        paddingHorizontal: layoutStyles.spacing.sm,
+                        paddingVertical: layoutStyles.spacing.xs,
+                        borderRadius: layoutStyles.layout.buttonBorderRadius,
+                      }]}
                       onPress={switchToManualMode}
                       disabled={isLoading}
                     >
-                      <Text style={styles.editTimestampButtonText}>編集する</Text>
+                      <Text style={[styles.editTimestampButtonText, {
+                        fontSize: layoutStyles.typography.fontSize.sm,
+                      }]}>編集する</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   // Manual mode: Editable inputs
-                  <View style={styles.timestampContainer}>
+                  <View style={[styles.timestampContainer, {
+                    borderRadius: layoutStyles.layout.inputBorderRadius,
+                    padding: layoutStyles.layout.inputPadding,
+                  }]}>
                     <View style={styles.timestampField}>
                       <Input
                         value={timestampMinutes}
                         onChangeText={handleTimestampMinutesChange}
                         placeholder="0"
                         keyboardType="numeric"
-                        style={styles.timestampInput}
+                        style={[styles.timestampInput, {
+                          fontSize: layoutStyles.typography.fontSize.md,
+                        }]}
                         editable={!isLoading}
                       />
-                      <Text style={styles.timestampUnit}>分</Text>
+                      <Text style={[styles.timestampUnit, {
+                        fontSize: layoutStyles.typography.fontSize.sm,
+                        marginLeft: layoutStyles.spacing.xs,
+                      }]}>分</Text>
                     </View>
-                    <Text style={styles.timestampSeparator}>:</Text>
+                    <Text style={[styles.timestampSeparator, {
+                      fontSize: layoutStyles.typography.fontSize.lg,
+                      marginHorizontal: layoutStyles.spacing.sm,
+                    }]}>:</Text>
                     <View style={styles.timestampField}>
                       <Input
                         value={timestampSeconds}
                         onChangeText={handleTimestampSecondsChange}
                         placeholder="0"
                         keyboardType="numeric"
-                        style={styles.timestampInput}
+                        style={[styles.timestampInput, {
+                          fontSize: layoutStyles.typography.fontSize.md,
+                        }]}
                         editable={!isLoading}
                       />
-                      <Text style={styles.timestampUnit}>秒</Text>
+                      <Text style={[styles.timestampUnit, {
+                        fontSize: layoutStyles.typography.fontSize.sm,
+                        marginLeft: layoutStyles.spacing.xs,
+                      }]}>秒</Text>
                     </View>
                   </View>
                 )}
-                <Text style={styles.hint}>
+                <Text style={[styles.hint, {
+                  fontSize: layoutStyles.typography.fontSize.sm,
+                  marginTop: layoutStyles.spacing.sm,
+                  lineHeight: layoutStyles.typography.fontSize.sm * layoutStyles.typography.lineHeight.normal,
+                }]}>
                   {currentTimestampMode === 'auto' && timestampLocked
                     ? '動画の現在時刻が自動で設定されています'
                     : '動画の特定の時間に関連するメモの場合は、タイムスタンプを設定してください'
@@ -370,48 +467,79 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
                 </Text>
               </>
             ) : (
-              <View style={styles.timestampDisabled}>
-                <Text style={styles.timestampDisabledText}>
+              <View style={[styles.timestampDisabled, {
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+                padding: layoutStyles.layout.inputPadding,
+              }]}>
+                <Text style={[styles.timestampDisabledText, {
+                  fontSize: layoutStyles.typography.fontSize.sm,
+                  marginBottom: layoutStyles.spacing.sm,
+                }]}>
                   タイムスタンプなしのメモとして保存されます
                 </Text>
                 <TouchableOpacity
-                  style={styles.enableTimestampButton}
+                  style={[styles.enableTimestampButton, {
+                    paddingHorizontal: layoutStyles.spacing.md,
+                    paddingVertical: layoutStyles.spacing.sm,
+                    borderRadius: layoutStyles.layout.buttonBorderRadius,
+                  }]}
                   onPress={toggleTimestampEnabled}
                   disabled={isLoading}
                 >
-                  <Text style={styles.enableTimestampButtonText}>タイムスタンプを追加</Text>
+                  <Text style={[styles.enableTimestampButtonText, {
+                    fontSize: layoutStyles.typography.fontSize.sm,
+                  }]}>タイムスタンプを追加</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </View>
+            </View>
+          </CardWrapper>
         )}
 
         {/* タスク提案機能 */}
         {content.trim() && memoType === 'action' && (
-          <View style={styles.field}>
-            <Button
-              title="💡 このメモからタスクを提案"
-              onPress={handleSuggestTask}
-              variant="outline"
-              disabled={isLoading}
-            />
-          </View>
+          <CardWrapper title="タスク提案">
+            <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+              <Button
+                title="💡 このメモからタスクを提案"
+                onPress={handleSuggestTask}
+                variant="outline"
+                disabled={isLoading}
+                style={{
+                  minHeight: layoutStyles.layout.buttonHeight * 1.2,
+                  paddingVertical: layoutStyles.spacing.sm,
+                  borderRadius: layoutStyles.layout.buttonBorderRadius,
+                }}
+              />
+            </View>
+          </CardWrapper>
         )}
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, {
+          marginTop: layoutStyles.spacing.xl,
+          gap: layoutStyles.layout.buttonSpacing,
+        }]}>
           {onCancel && (
             <Button
               title="キャンセル"
               onPress={onCancel}
               variant="outline"
-              style={styles.actionButton}
+              style={[styles.actionButton, {
+                minHeight: layoutStyles.layout.buttonHeight * 1.3,
+                paddingVertical: layoutStyles.spacing.sm,
+                borderRadius: layoutStyles.layout.buttonBorderRadius,
+              }]}
               disabled={isLoading}
             />
           )}
           <Button
             title={memo ? "更新" : "保存"}
             onPress={handleSubmit}
-            style={styles.submitButton}
+            style={[styles.submitButton, {
+              minHeight: layoutStyles.layout.buttonHeight * 1.3,
+              paddingVertical: layoutStyles.spacing.sm,
+              borderRadius: layoutStyles.layout.buttonBorderRadius,
+            }]}
             loading={isLoading}
           />
         </View>
