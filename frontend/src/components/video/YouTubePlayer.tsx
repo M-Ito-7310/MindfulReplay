@@ -98,17 +98,27 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
     dimensions.width < dimensions.height ? 'portrait' : 'landscape'
   );
 
-  // Update orientation when window dimensions change
-  useEffect(() => {
-    const updateDimensions = () => {
-      const newDimensions = Dimensions.get('window');
-      setDimensions(newDimensions);
-      setOrientation(newDimensions.width < newDimensions.height ? 'portrait' : 'landscape');
-    };
+  // Web-specific state and refs
+  const [webPlayer, setWebPlayer] = useState<any>(null);
+  const [isWebApiLoaded, setIsWebApiLoaded] = useState(false);
+  const webTimeUpdateInterval = useRef<NodeJS.Timeout | null>(null);
+  const lastWebTime = useRef(-1);
 
-    const subscription = Dimensions.addEventListener('change', updateDimensions);
-    return () => subscription?.remove();
-  }, []);
+  const extractVideoId = (url: string): string => {
+    if (url.length === 11) return url; // Already a video ID
+    
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/v\/([^&\n?#]+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    
+    return url;
+  };
 
   // Calculate optimal player dimensions based on orientation
   const calculatePlayerDimensions = () => {
@@ -164,11 +174,199 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   };
 
   const { width: playerWidth, height: playerHeight } = calculatePlayerDimensions();
-  
+  const playerId = `youtube-player-${extractVideoId(videoId)}-${Date.now()}`;
+
   // Only log errors for invalid dimensions
   if (__DEV__ && (!playerWidth || !playerHeight)) {
     console.error('[YouTubePlayer] Invalid dimensions:', playerWidth, playerHeight);
   }
+
+  // Update orientation when window dimensions change
+  useEffect(() => {
+    const updateDimensions = () => {
+      const newDimensions = Dimensions.get('window');
+      setDimensions(newDimensions);
+      setOrientation(newDimensions.width < newDimensions.height ? 'portrait' : 'landscape');
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription?.remove();
+  }, []);
+
+  // Web: Load YouTube IFrame API
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    
+    const loadYouTubeAPI = () => {
+      if (window.YT && window.YT.Player) {
+        setIsWebApiLoaded(true);
+        return;
+      }
+
+      if (!document.getElementById('youtube-api-script')) {
+        const script = document.createElement('script');
+        script.id = 'youtube-api-script';
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        document.head.appendChild(script);
+      }
+
+      window.onYouTubeIframeAPIReady = () => {
+        if (__DEV__) {
+          console.log('[YouTubePlayer] Web YouTube API loaded');
+        }
+        setIsWebApiLoaded(true);
+      };
+    };
+
+    loadYouTubeAPI();
+  }, []);
+
+  // Web: Initialize player when API is ready
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (!isWebApiLoaded || !videoId || webPlayer) return;
+
+    const cleanVideoId = extractVideoId(videoId);
+    if (__DEV__) {
+      console.log('[YouTubePlayer] Web initializing player:', {
+        videoId: cleanVideoId,
+        playerId,
+        autoplay
+      });
+    }
+
+    const player = new window.YT.Player(playerId, {
+      height: playerHeight,
+      width: playerWidth,
+      videoId: cleanVideoId,
+      playerVars: {
+        autoplay: autoplay ? 1 : 0,
+        start: initialTime,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+        enablejsapi: 1
+      },
+      events: {
+        onReady: (event) => {
+          if (__DEV__) {
+            console.log('[YouTubePlayer] Web player ready');
+          }
+          setWebPlayer(event.target);
+          setIsReady(true);
+          onReady?.();
+          
+          // Start timeUpdate interval
+          const startTimeUpdate = () => {
+            if (webTimeUpdateInterval.current) {
+              clearInterval(webTimeUpdateInterval.current);
+            }
+            
+            webTimeUpdateInterval.current = setInterval(() => {
+              if (event.target && typeof event.target.getCurrentTime === 'function') {
+                try {
+                  const currentTime = event.target.getCurrentTime();
+                  const playerState = event.target.getPlayerState();
+                  
+                  // Send updates more frequently for better responsiveness
+                  const roundedTime = Math.floor(currentTime * 10) / 10; // 0.1s precision
+                  if (Math.abs(roundedTime - lastWebTime.current) >= 0.1) {
+                    onTimeUpdate?.(currentTime);
+                    lastWebTime.current = roundedTime;
+                  }
+                  
+                  // Adjust interval based on playback state
+                  const isPlaying = playerState === window.YT.PlayerState.PLAYING;
+                  if (!isPlaying && webTimeUpdateInterval.current) {
+                    clearInterval(webTimeUpdateInterval.current);
+                    webTimeUpdateInterval.current = setInterval(() => startTimeUpdate(), 2000); // 2s when paused
+                  }
+                } catch (error) {
+                  if (__DEV__) {
+                    console.error('[YouTubePlayer] Web timeUpdate error:', error);
+                  }
+                }
+              }
+            }, 200); // 200ms for smoother updates
+          };
+          
+          startTimeUpdate();
+        },
+        onStateChange: (event) => {
+          let state = 'unknown';
+          
+          switch (event.data) {
+            case window.YT.PlayerState.PLAYING:
+              state = 'playing';
+              // Restart timeUpdate with 1s interval when playing
+              if (webTimeUpdateInterval.current) {
+                clearInterval(webTimeUpdateInterval.current);
+              }
+              webTimeUpdateInterval.current = setInterval(() => {
+                if (event.target && typeof event.target.getCurrentTime === 'function') {
+                  try {
+                    const currentTime = event.target.getCurrentTime();
+                    const roundedTime = Math.floor(currentTime * 10) / 10; // 0.1s precision
+                    if (Math.abs(roundedTime - lastWebTime.current) >= 0.1) {
+                      onTimeUpdate?.(currentTime);
+                      lastWebTime.current = roundedTime;
+                    }
+                  } catch (error) {
+                    if (__DEV__) {
+                      console.error('[YouTubePlayer] Web timeUpdate error:', error);
+                    }
+                  }
+                }
+              }, 200); // 200ms for smoother updates
+              break;
+            case window.YT.PlayerState.PAUSED:
+              state = 'paused';
+              break;
+            case window.YT.PlayerState.ENDED:
+              state = 'ended';
+              // Clear timeUpdate when video ends
+              if (webTimeUpdateInterval.current) {
+                clearInterval(webTimeUpdateInterval.current);
+                webTimeUpdateInterval.current = null;
+              }
+              break;
+          }
+          
+          if (__DEV__ && state !== 'unknown') {
+            console.log('[YouTubePlayer] Web state changed:', state);
+          }
+          onPlaybackStateChange?.(state as 'playing' | 'paused' | 'ended');
+        },
+        onError: (event) => {
+          if (__DEV__) {
+            console.error('[YouTubePlayer] Web error:', event.data);
+          }
+          const youtubeError = getYouTubeError(event.data);
+          onError?.(youtubeError.message, event.data);
+        }
+      }
+    });
+
+    return () => {
+      if (webTimeUpdateInterval.current) {
+        clearInterval(webTimeUpdateInterval.current);
+        webTimeUpdateInterval.current = null;
+      }
+    };
+  }, [isWebApiLoaded, videoId, playerId, playerHeight, playerWidth, autoplay, initialTime]);
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (timeUpdateIntervalRef.current) {
+        clearInterval(timeUpdateIntervalRef.current);
+      }
+      if (webTimeUpdateInterval.current) {
+        clearInterval(webTimeUpdateInterval.current);
+      }
+    };
+  }, []);
   
   // Optimized user agent for better YouTube compatibility
   const getUserAgent = (): string => {
@@ -179,30 +377,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
       return `${baseUA} (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36`;
     }
     return `${baseUA} (compatible; ReactNativeWebView)`;
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timeUpdateIntervalRef.current) {
-        clearInterval(timeUpdateIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const extractVideoId = (url: string): string => {
-    if (url.length === 11) return url; // Already a video ID
-    
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /youtube\.com\/v\/([^&\n?#]+)/,
-    ];
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-    
-    return url;
   };
 
   const generateHTML = (): string => {
@@ -560,31 +734,60 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   const seekTo = (time: number) => sendMessage({ type: 'seekTo', time });
   const getCurrentTime = () => sendMessage({ type: 'getCurrentTime' });
 
-  // Expose methods via ref
-  React.useImperativeHandle(ref, () => ({
-    play,
-    pause,
-    seekTo,
-    getCurrentTime,
-  }));
+  // Expose methods via ref - unified for both platforms
+  React.useImperativeHandle(ref, () => {
+    if (Platform.OS === 'web') {
+      return {
+        play: () => {
+          if (webPlayer && typeof webPlayer.playVideo === 'function') {
+            if (__DEV__) {
+              console.log('[YouTubePlayer] Web play()');
+            }
+            webPlayer.playVideo();
+          }
+        },
+        pause: () => {
+          if (webPlayer && typeof webPlayer.pauseVideo === 'function') {
+            if (__DEV__) {
+              console.log('[YouTubePlayer] Web pause()');
+            }
+            webPlayer.pauseVideo();
+          }
+        },
+        seekTo: (time: number) => {
+          if (webPlayer && typeof webPlayer.seekTo === 'function') {
+            if (__DEV__) {
+              console.log('[YouTubePlayer] Web seekTo:', time);
+            }
+            webPlayer.seekTo(time, true);
+          }
+        },
+        getCurrentTime: () => {
+          if (webPlayer && typeof webPlayer.getCurrentTime === 'function') {
+            return webPlayer.getCurrentTime();
+          }
+          return 0;
+        },
+      };
+    } else {
+      return {
+        play,
+        pause,
+        seekTo,
+        getCurrentTime,
+      };
+    }
+  }, [webPlayer]);
 
-  // Web platform implementation using iframe
+  // Web platform implementation using YouTube IFrame API
   if (Platform.OS === 'web') {
     const cleanVideoId = extractVideoId(videoId);
-    const iframeSrc = `https://www.youtube.com/embed/${cleanVideoId}?enablejsapi=1&autoplay=${autoplay ? 1 : 0}&start=${initialTime}&controls=1&modestbranding=1&rel=0`;
-    
-    if (__DEV__) {
-      console.log('[YouTubePlayer] Web iframe implementation:', {
-        videoId,
-        cleanVideoId,
-        iframeSrc,
-        orientation,
-        dimensions,
-        playerWidth,
-        playerHeight
-      });
+
+    if (__DEV__ && lastLoggedVideoIdRef.current !== videoId) {
+      console.log('[YouTubePlayer] Web YouTube IFrame API:', cleanVideoId, `${playerWidth}x${playerHeight}`);
+      lastLoggedVideoIdRef.current = videoId;
     }
-    
+
     return (
       <View style={[
         styles.container, 
@@ -594,20 +797,12 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
           borderRadius: orientation === 'landscape' ? 0 : 8
         }
       ]}>
-        <iframe
-          src={iframeSrc}
+        <div
+          id={playerId}
           style={{
             width: '100%',
             height: '100%',
-            border: 'none',
             backgroundColor: COLORS.BLACK,
-            display: 'block',
-          }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          onLoad={() => {
-            setIsReady(true);
-            onReady?.();
           }}
         />
       </View>
