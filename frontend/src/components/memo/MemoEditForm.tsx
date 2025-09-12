@@ -40,6 +40,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [timestampSeconds, setTimestampSeconds] = useState('');
   const [memoType, setMemoType] = useState<'insight' | 'action' | 'question' | 'summary'>(memo?.memo_type || 'insight');
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(memo?.importance || 3);
+  const [showImportanceOptions, setShowImportanceOptions] = useState(false);
   const [currentTimestampMode, setCurrentTimestampMode] = useState<TimestampMode>(timestampMode);
   const [timestampEnabled, setTimestampEnabled] = useState(timestampMode !== 'none');
 
@@ -244,26 +245,45 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
         {/* 重要度選択 */}
         <View style={styles.field}>
           <Text style={styles.label}>重要度</Text>
-          <View style={styles.importanceRow}>
-            {[1, 2, 3, 4, 5].map((level) => (
-              <TouchableOpacity
-                key={level}
-                style={[
-                  styles.importanceButton,
-                  importance === level && styles.importanceButtonActive,
-                ]}
-                onPress={() => setImportance(level as 1 | 2 | 3 | 4 | 5)}
-                disabled={isLoading}
-              >
-                <Text style={[
-                  styles.importanceButtonText,
-                  importance === level && styles.importanceButtonTextActive,
-                ]}>
-                  {getImportanceLabel(level)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+            style={styles.importanceDropdown}
+            onPress={() => setShowImportanceOptions(!showImportanceOptions)}
+            disabled={isLoading}
+          >
+            <Text style={styles.importanceDropdownText}>
+              {getImportanceLabel(importance)}
+            </Text>
+            <Text style={styles.dropdownArrow}>
+              {showImportanceOptions ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
+          
+          {showImportanceOptions && (
+            <View style={styles.importanceOptions}>
+              {[1, 2, 3, 4, 5].map((level, index) => (
+                <TouchableOpacity
+                  key={level}
+                  style={[
+                    styles.importanceOption,
+                    importance === level && styles.importanceOptionActive,
+                    index === 4 && styles.importanceOptionLast, // 最後の要素
+                  ]}
+                  onPress={() => {
+                    setImportance(level as 1 | 2 | 3 | 4 | 5);
+                    setShowImportanceOptions(false);
+                  }}
+                  disabled={isLoading}
+                >
+                  <Text style={[
+                    styles.importanceOptionText,
+                    importance === level && styles.importanceOptionTextActive,
+                  ]}>
+                    {getImportanceLabel(level)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.field}>
@@ -579,32 +599,56 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
   },
-  importanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  importanceButton: {
-    flex: 1,
-    backgroundColor: COLORS.GRAY_100,
-    paddingVertical: SPACING.SM,
-    paddingHorizontal: SPACING.XS,
-    borderRadius: BORDER_RADIUS.SM,
+  // Importance dropdown styles
+  importanceDropdown: {
+    backgroundColor: COLORS.WHITE,
     borderWidth: 1,
     borderColor: COLORS.GRAY_300,
-    marginHorizontal: SPACING.XS,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.MD,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  importanceButtonActive: {
-    backgroundColor: COLORS.PRIMARY_LIGHT,
-    borderColor: COLORS.PRIMARY,
+  importanceDropdownText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_PRIMARY,
+    flex: 1,
   },
-  importanceButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE.XS,
+  dropdownArrow: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
     color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
+    marginLeft: SPACING.SM,
   },
-  importanceButtonTextActive: {
-    color: COLORS.SUCCESS,
+  importanceOptions: {
+    backgroundColor: COLORS.WHITE,
+    borderWidth: 1,
+    borderColor: COLORS.GRAY_300,
+    borderRadius: BORDER_RADIUS.MD,
+    marginTop: SPACING.XS,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  importanceOption: {
+    padding: SPACING.MD,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.GRAY_200,
+  },
+  importanceOptionActive: {
+    backgroundColor: COLORS.PRIMARY_LIGHT,
+  },
+  importanceOptionText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_PRIMARY,
+  },
+  importanceOptionTextActive: {
+    color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+  },
+  importanceOptionLast: {
+    borderBottomWidth: 0, // 最後の要素の境界線を削除
   },
 });
