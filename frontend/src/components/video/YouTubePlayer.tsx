@@ -310,7 +310,8 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
             let lastTime = -1;
             window.timeUpdateInterval = null;
             
-            function updateTime() {
+            // Make updateTime globally accessible for message handlers
+            window.updateTime = function() {
                 if (player && isPlayerReady) {
                     try {
                         const currentTime = player.getCurrentTime();
@@ -333,20 +334,20 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                         if (window.timeUpdateInterval) {
                             clearTimeout(window.timeUpdateInterval);
                         }
-                        window.timeUpdateInterval = setTimeout(updateTime, nextInterval);
+                        window.timeUpdateInterval = setTimeout(window.updateTime, nextInterval);
                         
                     } catch (e) {
                         // Player might not be ready, retry in 1 second
                         if (window.timeUpdateInterval) {
                             clearTimeout(window.timeUpdateInterval);
                         }
-                        window.timeUpdateInterval = setTimeout(updateTime, 1000);
+                        window.timeUpdateInterval = setTimeout(window.updateTime, 1000);
                     }
                 }
             }
             
             // Start the smart update cycle
-            updateTime();
+            window.updateTime();
         }
         
         function onPlayerStateChange(event) {
@@ -355,6 +356,11 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
             switch (event.data) {
                 case YT.PlayerState.PLAYING:
                     state = 'playing';
+                    // Immediately trigger time update when resuming playback
+                    if (window.timeUpdateInterval) {
+                        clearTimeout(window.timeUpdateInterval);
+                    }
+                    window.timeUpdateInterval = setTimeout(window.updateTime, 100);
                     break;
                 case YT.PlayerState.PAUSED:
                     state = 'paused';
@@ -402,20 +408,32 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         }
         
         // Handle messages from React Native
-        document.addEventListener('message', function(event) {
+        function handleMessage(event) {
             const data = JSON.parse(event.data);
             
-            if (!player || !isPlayerReady) return;
+            if (!player || !isPlayerReady) {
+                return;
+            }
             
             switch (data.type) {
                 case 'play':
                     player.playVideo();
+                    // Immediately trigger time update when play is called
+                    if (window.timeUpdateInterval) {
+                        clearTimeout(window.timeUpdateInterval);
+                    }
+                    window.timeUpdateInterval = setTimeout(window.updateTime, 100);
                     break;
                 case 'pause':
                     player.pauseVideo();
                     break;
                 case 'seekTo':
                     player.seekTo(data.time);
+                    // Immediately trigger time update after seeking
+                    if (window.timeUpdateInterval) {
+                        clearTimeout(window.timeUpdateInterval);
+                    }
+                    window.timeUpdateInterval = setTimeout(window.updateTime, 100);
                     break;
                 case 'getCurrentTime':
                     const currentTime = player.getCurrentTime();
@@ -425,7 +443,14 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                     }));
                     break;
             }
-        });
+        }
+        
+        // Add multiple event listeners for cross-platform compatibility
+        document.addEventListener('message', handleMessage);
+        window.addEventListener('message', handleMessage);
+        
+        // Also add a global function for direct calls
+        window.handleReactNativeMessage = handleMessage;
     </script>
 </body>
 </html>`;
@@ -505,7 +530,27 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
 
   const sendMessage = (message: any) => {
     if (webViewRef.current && isReady) {
-      webViewRef.current.postMessage(JSON.stringify(message));
+      try {
+        // Primary method: postMessage
+        webViewRef.current.postMessage(JSON.stringify(message));
+        
+        // Alternative method: injectedJavaScript for immediate execution
+        const jsCode = `
+          try {
+            if (window.handleReactNativeMessage) {
+              window.handleReactNativeMessage({data: '${JSON.stringify(message)}'});
+            }
+          } catch (e) {
+            console.log('Failed to handle message via injectedJS:', e);
+          }
+          true; // Always return true for injectedJavaScript
+        `;
+        webViewRef.current.injectJavaScript(jsCode);
+      } catch (error) {
+        if (__DEV__) {
+          console.error('[YouTubePlayer] Error sending message:', error);
+        }
+      }
     }
   };
 

@@ -24,9 +24,10 @@ interface VideoPlayerProps {
   onAddMemo?: (timestamp?: number) => void;
   onRefreshMemos?: () => void;
   isRefreshingMemos?: boolean;
+  onPlaybackStateChange?: (state: 'playing' | 'paused' | 'ended') => void;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
   video,
   memos,
   onMemoPress,
@@ -36,7 +37,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onAddMemo,
   onRefreshMemos,
   isRefreshingMemos = false,
-}) => {
+  onPlaybackStateChange,
+}, ref) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackState, setPlaybackState] = useState<'playing' | 'paused' | 'ended'>('paused');
   const [showMemos, setShowMemos] = useState(true);
@@ -90,9 +92,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       console.log('[VideoPlayer] State:', playbackState, '→', state);
     }
     setPlaybackState(state);
+    onPlaybackStateChange?.(state);
   };
 
   const handleAddMemoAtCurrentTime = () => {
+    // Pause the video before opening memo modal
+    if (playerRef.current && playbackState === 'playing') {
+      playerRef.current.pause();
+    }
     onAddMemo?.(Math.floor(currentTime));
   };
 
@@ -127,6 +134,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     console.log('[VideoPlayer] Render:', video.id, video.title?.substring(0, 30) + '...');
     lastRenderedVideoRef.current = video.id;
   }
+
+  // Add ref access to YouTubePlayer methods
+  React.useImperativeHandle(ref, () => ({
+    play: () => playerRef.current?.play(),
+    pause: () => playerRef.current?.pause(),
+    seekTo: (time: number) => playerRef.current?.seekTo(time),
+  }));
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -262,7 +276,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </View>
     </ScrollView>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

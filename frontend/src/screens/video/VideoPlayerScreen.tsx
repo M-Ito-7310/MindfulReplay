@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { VideoPlayer } from '@/components/video';
+import { MemoCreateModal } from '@/components/memo';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
 import { COLORS } from '@/constants/theme';
@@ -31,6 +32,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const [isLoadingMemos, setIsLoadingMemos] = useState(true);
   const [isRefreshingMemos, setIsRefreshingMemos] = useState(false);
   const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
+  const [showMemoModal, setShowMemoModal] = useState(false);
+  const [memoModalTimestamp, setMemoModalTimestamp] = useState<number | undefined>();
+  const [wasPlayingBeforeMemo, setWasPlayingBeforeMemo] = useState(false);
+  const [currentPlaybackState, setCurrentPlaybackState] = useState<'playing' | 'paused' | 'ended'>('paused');
+
+  const handlePlaybackStateChange = (state: 'playing' | 'paused' | 'ended') => {
+    setCurrentPlaybackState(state);
+  };
+  const videoPlayerRef = useRef<any>(null);
   const isLandscape = dimensions.width > dimensions.height;
 
   const videoId = route?.params?.videoId;
@@ -175,12 +185,28 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   };
 
   const handleAddMemo = (timestamp?: number) => {
-    if (navigation && videoId) {
-      navigation.navigate('MemoCreate', { 
-        videoId,
-        timestamp: timestamp 
-      });
+    // Remember if video was playing before memo modal
+    setWasPlayingBeforeMemo(currentPlaybackState === 'playing');
+    setMemoModalTimestamp(timestamp);
+    setShowMemoModal(true);
+  };
+
+  const handleMemoModalClose = () => {
+    setShowMemoModal(false);
+    setMemoModalTimestamp(undefined);
+    
+    // Resume playback if it was playing before memo modal
+    if (wasPlayingBeforeMemo && videoPlayerRef.current) {
+      setTimeout(() => {
+        videoPlayerRef.current?.play();
+      }, 100); // Small delay to ensure modal is fully closed
     }
+    setWasPlayingBeforeMemo(false);
+  };
+
+  const handleMemoCreated = (newMemo: Memo) => {
+    // Add the new memo to the list
+    setMemos(prev => [newMemo, ...prev]);
   };
 
   const handleConvertToTask = (memo: Memo) => {
@@ -239,6 +265,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
       )}
 
       <VideoPlayer
+        ref={videoPlayerRef}
         video={video}
         memos={memos}
         onMemoPress={handleMemoPress}
@@ -248,7 +275,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
         onAddMemo={handleAddMemo}
         onRefreshMemos={handleRefreshMemos}
         isRefreshingMemos={isRefreshingMemos}
+        onPlaybackStateChange={handlePlaybackStateChange}
       />
+
+      {/* Memo Creation Modal */}
+      {video && (
+        <MemoCreateModal
+          visible={showMemoModal}
+          onClose={handleMemoModalClose}
+          onMemoCreated={handleMemoCreated}
+          video={video}
+          timestamp={memoModalTimestamp}
+        />
+      )}
     </SafeAreaView>
   );
 };
