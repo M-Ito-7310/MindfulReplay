@@ -44,7 +44,9 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
   const [showFormatOptions, setShowFormatOptions] = useState(false);
   const [currentTimestampMode, setCurrentTimestampMode] = useState<TimestampMode>(timestampMode);
-  const [timestampEnabled, setTimestampEnabled] = useState(timestampMode !== 'none');
+  const [timestampEnabled, setTimestampEnabled] = useState(
+    timestampMode !== 'none' && (memo?.timestamp_sec !== undefined || initialTimestamp !== undefined)
+  );
   const { getLayoutStyles } = useLayoutTheme();
 
   useEffect(() => {
@@ -649,18 +651,18 @@ const styles = StyleSheet.create({
   timestampToggle: {
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.PRIMARY_LIGHT,
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
     borderColor: COLORS.PRIMARY,
   },
   timestampToggleText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,
-    color: COLORS.PRIMARY,
+    color: COLORS.WHITE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   timestampToggleTextDisabled: {
-    color: COLORS.TEXT_MUTED,
+    color: COLORS.WHITE,
   },
   // Auto mode read-only display
   timestampReadOnly: {
