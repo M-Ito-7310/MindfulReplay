@@ -548,6 +548,16 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
           marginTop: layoutStyles.spacing.xl,
           gap: layoutStyles.layout.buttonSpacing,
         }]}>
+          <Button
+            title={memo ? "更新" : "保存"}
+            onPress={handleSubmit}
+            style={[styles.actionButton, {
+              minHeight: layoutStyles.layout.buttonHeight * 1.3,
+              paddingVertical: layoutStyles.spacing.sm,
+              borderRadius: layoutStyles.layout.buttonBorderRadius,
+            }]}
+            loading={isLoading}
+          />
           {onCancel && (
             <Button
               title="キャンセル"
@@ -561,16 +571,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               disabled={isLoading}
             />
           )}
-          <Button
-            title={memo ? "更新" : "保存"}
-            onPress={handleSubmit}
-            style={[styles.submitButton, {
-              minHeight: layoutStyles.layout.buttonHeight * 1.3,
-              paddingVertical: layoutStyles.spacing.sm,
-              borderRadius: layoutStyles.layout.buttonBorderRadius,
-            }]}
-            loading={isLoading}
-          />
         </View>
       </View>
     </ScrollView>
@@ -730,7 +730,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: SPACING.XS,
   },
-  submitButton: {},
   // Format dropdown styles
   formatDropdown: {
     backgroundColor: COLORS.WHITE,
