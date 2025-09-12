@@ -64,9 +64,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
+    if (__DEV__ && Math.floor(time) % 30 === 0) { // Log every 30 seconds to avoid spam
+      console.log('[VideoPlayer] Time update:', {
+        videoId: video?.id,
+        youtube_id: video?.youtube_id,
+        currentTime: Math.floor(time),
+        title: video?.title
+      });
+    }
   };
 
   const handlePlaybackStateChange = (state: 'playing' | 'paused' | 'ended') => {
+    if (__DEV__) {
+      console.log('[VideoPlayer] Playback state changed:', {
+        videoId: video?.id,
+        youtube_id: video?.youtube_id,
+        previousState: playbackState,
+        newState: state,
+        title: video?.title
+      });
+    }
     setPlaybackState(state);
   };
 
@@ -127,6 +144,28 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           videoId={getVideoId()}
           onTimeUpdate={handleTimeUpdate}
           onPlaybackStateChange={handlePlaybackStateChange}
+          onError={(error) => {
+            if (__DEV__) {
+              console.error('[VideoPlayer] YouTube player error:', {
+                videoId: video?.id,
+                youtube_url: video?.youtube_url,
+                youtube_id: video?.youtube_id,
+                extractedId: getVideoId(),
+                error,
+                title: video?.title
+              });
+            }
+          }}
+          onReady={() => {
+            if (__DEV__) {
+              console.log('[VideoPlayer] YouTube player ready:', {
+                videoId: video?.id,
+                youtube_url: video?.youtube_url,
+                extractedId: getVideoId(),
+                title: video?.title
+              });
+            }
+          }}
           autoplay={false}
         />
       </View>
