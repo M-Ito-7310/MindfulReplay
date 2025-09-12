@@ -176,6 +176,12 @@ export const TaskEditForm: React.FC<TaskEditFormProps> = ({
         </View>
 
         <View style={styles.actions}>
+          <Button
+            title={task ? "更新" : "作成"}
+            onPress={handleSubmit}
+            style={[styles.actionButton, styles.submitButton]}
+            loading={isLoading}
+          />
           {onCancel && (
             <Button
               title="キャンセル"
@@ -185,12 +191,6 @@ export const TaskEditForm: React.FC<TaskEditFormProps> = ({
               disabled={isLoading}
             />
           )}
-          <Button
-            title={task ? "更新" : "作成"}
-            onPress={handleSubmit}
-            style={[styles.actionButton, styles.submitButton]}
-            loading={isLoading}
-          />
         </View>
       </View>
     </ScrollView>

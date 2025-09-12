@@ -295,17 +295,17 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                 <View style={styles.buttonContainer}>
                   <View style={styles.buttonRow}>
                     <Button
+                      title={isSaving ? "保存中..." : "動画を保存"}
+                      onPress={handleSaveVideo}
+                      disabled={isSaving}
+                      style={styles.saveButton}
+                    />
+                    <Button
                       title="戻る"
                       onPress={handleBackToInput}
                       variant="outline"
                       style={styles.backButton}
                       disabled={isSaving}
-                    />
-                    <Button
-                      title={isSaving ? "保存中..." : "動画を保存"}
-                      onPress={handleSaveVideo}
-                      disabled={isSaving}
-                      style={styles.saveButton}
                     />
                   </View>
                   {isSaving && (
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   saveButton: {
-    flex: 2,
+    flex: 1,
   },
   submitButton: {
     minWidth: 200,
