@@ -142,139 +142,174 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
     seekTo: (time: number) => playerRef.current?.seekTo(time),
   }));
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Video Player */}
-      <View style={[
-        styles.playerContainer, 
-        orientation === 'landscape' ? styles.playerContainerLandscape : styles.playerContainerPortrait
-      ]}>
-        <YouTubePlayer
-          ref={playerRef}
-          videoId={getVideoId()}
-          onTimeUpdate={handleTimeUpdate}
-          onPlaybackStateChange={handlePlaybackStateChange}
-          onError={(error) => {
-            if (__DEV__) {
-              console.error('[VideoPlayer] Player error:', getVideoId(), error);
-            }
-          }}
-          onReady={() => {
-            if (__DEV__) {
-              console.log('[VideoPlayer] Player ready:', getVideoId());
-            }
-          }}
-          autoplay={false}
-        />
-      </View>
-
-      {/* Video Info */}
-      <View style={styles.videoInfo}>
-        <Text style={styles.videoTitle}>{video?.title || 'タイトル不明'}</Text>
-        {video?.channel_name && (
-          <Text style={styles.channelName}>{video.channel_name}</Text>
-        )}
-        {video?.description && (
-          <Text style={styles.description} numberOfLines={3}>
-            {video.description}
-          </Text>
-        )}
-      </View>
-
-      {/* Current Time and Controls */}
-      <View style={styles.controls}>
-        <View style={styles.timeInfo}>
-          <Text style={styles.currentTime}>
-            現在の時刻: {formatTime(currentTime)}
-          </Text>
-          <Text style={styles.playbackState}>
-            状態: {playbackState === 'playing' ? '再生中' : playbackState === 'paused' ? '一時停止' : '終了'}
-          </Text>
+  // YouTube-like layout: Fixed player + Scrollable content below
+  // In landscape mode, use full screen like before
+  if (orientation === 'landscape') {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.playerContainer, styles.playerContainerLandscape]}>
+          <YouTubePlayer
+            ref={playerRef}
+            videoId={getVideoId()}
+            onTimeUpdate={handleTimeUpdate}
+            onPlaybackStateChange={handlePlaybackStateChange}
+            onError={(error) => {
+              if (__DEV__) {
+                console.error('[VideoPlayer] Player error:', getVideoId(), error);
+              }
+            }}
+            onReady={() => {
+              if (__DEV__) {
+                console.log('[VideoPlayer] Player ready:', getVideoId());
+              }
+            }}
+            autoplay={false}
+          />
         </View>
-        <Button
-          title="この時刻にメモ追加"
-          onPress={handleAddMemoAtCurrentTime}
-          size="small"
-          variant="outline"
-        />
+      </View>
+    );
+  }
+
+  // Portrait mode: YouTube-like fixed player + scrollable content
+  return (
+    <View style={styles.container}>
+      {/* Fixed Video Player Section */}
+      <View style={[styles.fixedPlayerSection, styles.fixedPlayerSectionPortrait]}>
+        <View style={[styles.playerContainer, styles.playerContainerPortrait]}>
+          <YouTubePlayer
+            ref={playerRef}
+            videoId={getVideoId()}
+            onTimeUpdate={handleTimeUpdate}
+            onPlaybackStateChange={handlePlaybackStateChange}
+            onError={(error) => {
+              if (__DEV__) {
+                console.error('[VideoPlayer] Player error:', getVideoId(), error);
+              }
+            }}
+            onReady={() => {
+              if (__DEV__) {
+                console.log('[VideoPlayer] Player ready:', getVideoId());
+              }
+            }}
+            autoplay={false}
+          />
+        </View>
       </View>
 
-      {/* Memo Section Toggle */}
-      <View style={styles.memoSection}>
-        <TouchableOpacity
-          style={styles.memoHeader}
-          onPress={() => setShowMemos(!showMemos)}
-        >
-          <Text style={styles.memoHeaderTitle}>
-            メモ ({memos.length})
-          </Text>
-          <Text style={styles.toggleIcon}>
-            {showMemos ? '▼' : '▶'}
-          </Text>
-        </TouchableOpacity>
+      {/* Scrollable Content Section */}
+      <ScrollView 
+        style={styles.scrollableContent} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollableContentContainer}
+      >
+        {/* Video Info */}
+        <View style={styles.videoInfo}>
+          <Text style={styles.videoTitle}>{video?.title || 'タイトル不明'}</Text>
+          {video?.channel_name && (
+            <Text style={styles.channelName}>{video.channel_name}</Text>
+          )}
+          {video?.description && (
+            <Text style={styles.description} numberOfLines={3}>
+              {video.description}
+            </Text>
+          )}
+        </View>
 
-        {showMemos && (
-          <View style={styles.memoContent}>
-            {/* Timestamped Memos */}
-            {timestampedMemos.length > 0 && (
-              <View style={styles.memoGroup}>
-                <Text style={styles.memoGroupTitle}>
-                  タイムスタンプ付きメモ ({timestampedMemos.length})
-                </Text>
-                {timestampedMemos.map((memo) => (
-                  <TouchableOpacity
-                    key={memo.id}
-                    style={styles.timestampedMemo}
-                    onPress={() => handleMemoJump(memo)}
-                  >
-                    <View style={styles.timestampBadge}>
-                      <Text style={styles.timestampText}>
-                        {formatTime(memo.timestamp_sec || 0)}
-                      </Text>
-                    </View>
-                    <Text style={styles.memoText} numberOfLines={2}>
-                      {memo.content}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* General Memos */}
-            {generalMemos.length > 0 && (
-              <View style={styles.memoGroup}>
-                <Text style={styles.memoGroupTitle}>
-                  一般メモ ({generalMemos.length})
-                </Text>
-                <MemoList
-                  memos={generalMemos}
-                  onMemoPress={onMemoPress}
-                  onMemoEdit={onMemoEdit}
-                  onMemoDelete={onMemoDelete}
-                  onMemoConvertToTask={onMemoConvertToTask}
-                  emptyTitle="一般メモがありません"
-                  emptySubtitle=""
-                  showActions={true}
-                />
-              </View>
-            )}
-
-            {memos.length === 0 && (
-              <View style={styles.emptyMemos}>
-                <Text style={styles.emptyMemosText}>
-                  この動画にはまだメモがありません
-                </Text>
-                <Button
-                  title="最初のメモを追加"
-                  onPress={() => onAddMemo?.()}
-                  style={styles.emptyMemosButton}
-                />
-              </View>
-            )}
+        {/* Current Time and Controls */}
+        <View style={styles.controls}>
+          <View style={styles.timeInfo}>
+            <Text style={styles.currentTime}>
+              現在の時刻: {formatTime(currentTime)}
+            </Text>
+            <Text style={styles.playbackState}>
+              状態: {playbackState === 'playing' ? '再生中' : playbackState === 'paused' ? '一時停止' : '終了'}
+            </Text>
           </View>
-        )}
-      </View>
-    </ScrollView>
+          <Button
+            title="この時刻にメモ追加"
+            onPress={handleAddMemoAtCurrentTime}
+            size="small"
+            variant="outline"
+          />
+        </View>
+
+        {/* Memo Section Toggle */}
+        <View style={styles.memoSection}>
+          <TouchableOpacity
+            style={styles.memoHeader}
+            onPress={() => setShowMemos(!showMemos)}
+          >
+            <Text style={styles.memoHeaderTitle}>
+              メモ ({memos.length})
+            </Text>
+            <Text style={styles.toggleIcon}>
+              {showMemos ? '▼' : '▶'}
+            </Text>
+          </TouchableOpacity>
+
+          {showMemos && (
+            <View style={styles.memoContent}>
+              {/* Timestamped Memos */}
+              {timestampedMemos.length > 0 && (
+                <View style={styles.memoGroup}>
+                  <Text style={styles.memoGroupTitle}>
+                    タイムスタンプ付きメモ ({timestampedMemos.length})
+                  </Text>
+                  {timestampedMemos.map((memo) => (
+                    <TouchableOpacity
+                      key={memo.id}
+                      style={styles.timestampedMemo}
+                      onPress={() => handleMemoJump(memo)}
+                    >
+                      <View style={styles.timestampBadge}>
+                        <Text style={styles.timestampText}>
+                          {formatTime(memo.timestamp_sec || 0)}
+                        </Text>
+                      </View>
+                      <Text style={styles.memoText} numberOfLines={2}>
+                        {memo.content}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* General Memos */}
+              {generalMemos.length > 0 && (
+                <View style={styles.memoGroup}>
+                  <Text style={styles.memoGroupTitle}>
+                    一般メモ ({generalMemos.length})
+                  </Text>
+                  <MemoList
+                    memos={generalMemos}
+                    onMemoPress={onMemoPress}
+                    onMemoEdit={onMemoEdit}
+                    onMemoDelete={onMemoDelete}
+                    onMemoConvertToTask={onMemoConvertToTask}
+                    emptyTitle="一般メモがありません"
+                    emptySubtitle=""
+                    showActions={true}
+                  />
+                </View>
+              )}
+
+              {memos.length === 0 && (
+                <View style={styles.emptyMemos}>
+                  <Text style={styles.emptyMemosText}>
+                    この動画にはまだメモがありません
+                  </Text>
+                  <Button
+                    title="最初のメモを追加"
+                    onPress={() => onAddMemo?.()}
+                    style={styles.emptyMemosButton}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 });
 
@@ -283,25 +318,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
   },
+  // Fixed Player Section (YouTube-like)
+  fixedPlayerSection: {
+    backgroundColor: COLORS.BLACK,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  fixedPlayerSectionPortrait: {
+    // Auto-sizing based on player content
+  },
   playerContainer: {
     backgroundColor: COLORS.BLACK,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerContainerPortrait: {
-    paddingVertical: SPACING.MD,
-    paddingHorizontal: SPACING.MD,
-  },
-  playerContainerLandscape: {
     paddingVertical: SPACING.SM,
     paddingHorizontal: SPACING.SM,
-    // In landscape mode, use more screen space
-    flex: Platform.select({
-      ios: undefined,
-      android: undefined,
-      web: undefined,
-      default: 1
-    }),
+  },
+  playerContainerLandscape: {
+    paddingVertical: SPACING.XS,
+    paddingHorizontal: SPACING.XS,
+    flex: 1,
+  },
+  // Scrollable Content Section
+  scrollableContent: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
+  },
+  scrollableContentContainer: {
+    flexGrow: 1,
   },
   videoInfo: {
     padding: SPACING.MD,
