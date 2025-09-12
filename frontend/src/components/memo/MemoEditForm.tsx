@@ -39,9 +39,10 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [content, setContent] = useState(memo?.content || '');
   const [timestampMinutes, setTimestampMinutes] = useState('');
   const [timestampSeconds, setTimestampSeconds] = useState('');
-  const [memoType, setMemoType] = useState<'insight' | 'action' | 'question' | 'summary'>(memo?.memo_type || 'insight');
+  const [memoType, setMemoType] = useState<'insight' | 'action' | 'question' | 'summary' | undefined>(memo?.memo_type || undefined);
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(memo?.importance || 3);
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
+  const [showFormatOptions, setShowFormatOptions] = useState(false);
   const [currentTimestampMode, setCurrentTimestampMode] = useState<TimestampMode>(timestampMode);
   const [timestampEnabled, setTimestampEnabled] = useState(timestampMode !== 'none');
   const { getLayoutStyles } = useLayoutTheme();
@@ -73,7 +74,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
       const formData: MemoForm = {
         content: content.trim(),
         timestamp_sec: (timestampEnabled && showTimestamp) ? formatTimestamp(timestampMinutes, timestampSeconds) : undefined,
-        memo_type: memoType,
+        memo_type: memoType || 'insight', // デフォルトでinsightを送信
         importance: importance,
       };
 
@@ -233,33 +234,69 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               fontSize: layoutStyles.typography.fontSize.md,
               marginBottom: layoutStyles.layout.labelSpacing,
               fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
-            }]}>メモの種類</Text>
-            <View style={[styles.templateRow, { gap: layoutStyles.layout.buttonSpacing }]}>
-              {(['insight', 'action', 'question', 'summary'] as const).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.templateButton,
-                    {
-                      height: layoutStyles.layout.buttonHeight * 0.8,
-                      paddingHorizontal: layoutStyles.spacing.sm,
-                      borderRadius: layoutStyles.layout.buttonBorderRadius,
-                    },
-                    memoType === type && styles.templateButtonActive,
-                  ]}
-                  onPress={() => applyTemplate(type)}
-                  disabled={isLoading}
-                >
-                  <Text style={[
-                    styles.templateButtonText,
-                    { fontSize: layoutStyles.typography.fontSize.sm },
-                    memoType === type && styles.templateButtonTextActive,
-                  ]}>
-                    {getMemoTypeLabel(type)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            }]}>メモのフォーマット</Text>
+            <TouchableOpacity
+              style={[styles.formatDropdown, {
+                minHeight: layoutStyles.layout.buttonHeight * 1.2,
+                paddingHorizontal: layoutStyles.spacing.sm,
+                paddingVertical: layoutStyles.spacing.sm,
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+              }]}
+              onPress={() => {
+                setShowFormatOptions(!showFormatOptions);
+                if (showImportanceOptions) setShowImportanceOptions(false);
+              }}
+              disabled={isLoading}
+            >
+              <Text style={[styles.formatDropdownText, { 
+                fontSize: layoutStyles.typography.fontSize.sm,
+                lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                flex: 1,
+                flexWrap: 'wrap',
+              }]} numberOfLines={2}>
+                {memoType ? getMemoTypeLabel(memoType) : 'テンプレートなし'}
+              </Text>
+              <Text style={[styles.dropdownArrow, { fontSize: layoutStyles.typography.fontSize.sm }]}>
+                {showFormatOptions ? '▲' : '▼'}
+              </Text>
+            </TouchableOpacity>
+            
+            {showFormatOptions && (
+              <View style={[styles.formatOptions, { 
+                borderRadius: layoutStyles.layout.inputBorderRadius,
+                marginTop: layoutStyles.spacing.xs,
+              }]}>
+                {(['insight', 'action', 'question', 'summary'] as const).map((type, index) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.formatOption,
+                      {
+                        padding: layoutStyles.spacing.md,
+                      },
+                      memoType === type && styles.formatOptionActive,
+                      index === 3 && styles.formatOptionLast, // 最後の要素
+                    ]}
+                    onPress={() => {
+                      applyTemplate(type);
+                      setShowFormatOptions(false);
+                    }}
+                    disabled={isLoading}
+                  >
+                    <Text style={[
+                      styles.formatOptionText,
+                      { 
+                        fontSize: layoutStyles.typography.fontSize.sm,
+                        lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                      },
+                      memoType === type && styles.formatOptionTextActive,
+                    ]}>
+                      {getMemoTypeLabel(type)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* 重要度選択 */}
@@ -276,7 +313,10 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
                 paddingVertical: layoutStyles.spacing.sm,
                 borderRadius: layoutStyles.layout.inputBorderRadius,
               }]}
-              onPress={() => setShowImportanceOptions(!showImportanceOptions)}
+              onPress={() => {
+                setShowImportanceOptions(!showImportanceOptions);
+                if (showFormatOptions) setShowFormatOptions(false);
+              }}
               disabled={isLoading}
             >
               <Text style={[styles.importanceDropdownText, { 
@@ -702,30 +742,52 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.XS,
   },
   submitButton: {},
-  templateRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.SM,
-  },
-  templateButton: {
-    backgroundColor: COLORS.GRAY_100,
-    paddingHorizontal: SPACING.SM,
-    paddingVertical: SPACING.XS,
-    borderRadius: BORDER_RADIUS.SM,
+  // Format dropdown styles
+  formatDropdown: {
+    backgroundColor: COLORS.WHITE,
     borderWidth: 1,
     borderColor: COLORS.GRAY_300,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.MD,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  templateButtonActive: {
+  formatDropdownText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_PRIMARY,
+    flex: 1,
+  },
+  formatOptions: {
+    backgroundColor: COLORS.WHITE,
+    borderWidth: 1,
+    borderColor: COLORS.GRAY_300,
+    borderRadius: BORDER_RADIUS.MD,
+    marginTop: SPACING.XS,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  formatOption: {
+    padding: SPACING.MD,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.GRAY_200,
+  },
+  formatOptionActive: {
     backgroundColor: COLORS.PRIMARY_LIGHT,
-    borderColor: COLORS.PRIMARY,
   },
-  templateButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
-    color: COLORS.TEXT_SECONDARY,
+  formatOptionText: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_PRIMARY,
   },
-  templateButtonTextActive: {
+  formatOptionTextActive: {
     color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.SEMIBOLD,
+  },
+  formatOptionLast: {
+    borderBottomWidth: 0, // 最後の要素の境界線を削除
   },
   // Importance dropdown styles
   importanceDropdown: {
