@@ -89,7 +89,7 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
 
   const handleMemoPress = (memo: Memo) => {
     if (navigation) {
-      navigation.navigate('MemoEdit', { memoId: memo.id });
+      navigation.navigate('MemoDetail', { memoId: memo.id });
     }
   };
 

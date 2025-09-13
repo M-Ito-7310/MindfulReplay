@@ -9,6 +9,7 @@ export { VideoPlayerScreen } from './video/VideoPlayerScreen';
 // Memo screens
 export { MemoListScreen } from './memo/MemoListScreen';
 export { MemoCreateScreen } from './memo/MemoCreateScreen';
+export { MemoDetailScreen } from './memo/MemoDetailScreen';
 export { MemoEditScreen } from './memo/MemoEditScreen';
 
 // Task screens

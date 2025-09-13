@@ -37,6 +37,15 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [includeTimestamp, setIncludeTimestamp] = useState(false);
   const { getLayoutStyles } = useLayoutTheme();
 
+  // Update form state when memo prop changes
+  useEffect(() => {
+    if (memo) {
+      setContent(memo.content || '');
+      setMemoType(memo.memo_type || undefined);
+      setImportance(memo.importance || 3);
+    }
+  }, [memo]);
+
   // Prepare final content with timestamp if needed
   const getFinalContent = (): string => {
     if (includeTimestamp && initialTimestamp !== undefined) {
