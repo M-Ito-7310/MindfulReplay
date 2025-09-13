@@ -6,10 +6,16 @@ import { AuthResponse, LoginForm, SignupForm, User } from '@/types';
 class AuthService {
   // Login user
   async login(credentials: LoginForm): Promise<AuthResponse> {
+    console.log('[Auth Service] Starting login with credentials:', { email: credentials.email });
+    console.log('[Auth Service] API endpoint:', API_CONFIG.ENDPOINTS.LOGIN);
+    console.log('[Auth Service] Base URL:', API_CONFIG.BASE_URL);
+
     const response = await apiService.post<AuthResponse>(
       API_CONFIG.ENDPOINTS.LOGIN,
       credentials
     );
+
+    console.log('[Auth Service] Login response:', response);
 
     if (response.success && response.data) {
       await this.storeAuthData(response.data);

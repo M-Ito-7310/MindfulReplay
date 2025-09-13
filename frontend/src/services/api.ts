@@ -12,6 +12,12 @@ class ApiService {
   constructor() {
     this.baseURL = API_CONFIG.BASE_URL;
     this.timeout = API_CONFIG.TIMEOUT;
+
+    // Force reset connection test on initialization
+    this.resetConnectionTest();
+
+    // Debug: log the base URL being used
+    console.log('[API Service] Initialized with baseURL:', this.baseURL);
   }
 
   // Get auth token from storage
@@ -112,20 +118,28 @@ class ApiService {
 
   // POST request
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    console.log('[API Service] POST request to:', endpoint);
+    console.log('[API Service] POST data:', data);
+
     // Dynamic API selection based on backend availability
     const useBackend = await this.shouldUseBackendAPI(endpoint);
-    
+
     if (!useBackend) {
+      console.log('[API Service] Using local storage fallback for POST');
       return this.handleLocalStoragePost<T>(endpoint, data);
     }
-    
+
     // Make API request with local storage fallback
     try {
-      return await this.request<T>(endpoint, {
+      console.log('[API Service] Making backend POST request');
+      const result = await this.request<T>(endpoint, {
         method: 'POST',
         body: data ? JSON.stringify(data) : undefined,
       });
+      console.log('[API Service] Backend POST success:', result);
+      return result;
     } catch (error) {
+      console.log('[API Service] Backend POST failed, falling back to local storage:', error);
       return await this.handleLocalStoragePost<T>(endpoint, data);
     }
   }
@@ -176,25 +190,43 @@ class ApiService {
 
   // Check if API URL is configured for backend communication
   private hasApiUrlConfigured(): boolean {
+    // For web environment, always try backend first
+    if (typeof window !== 'undefined' && window.location) {
+      return true;
+    }
+    // For native environment, check if API URL is configured
     return !!(typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL);
   }
 
   // Dynamic API selection: determine whether to use backend or local storage
   private async shouldUseBackendAPI(endpoint: string): Promise<boolean> {
+    console.log('[API Service] shouldUseBackendAPI called for endpoint:', endpoint);
+
     // Always use local storage if no API URL is configured
     if (!this.hasApiUrlConfigured()) {
+      console.log('[API Service] API URL not configured, using local storage');
       return false;
     }
 
+    console.log('[API Service] API URL configured, testing backend connection');
+
     // Test backend connection if not tested yet
     if (!this.connectionTested) {
+      console.log('[API Service] Testing backend connection...');
       const connectionResult = await this.testConnection();
       this.backendAvailable = connectionResult.success;
       this.connectionTested = true;
+      console.log('[API Service] Backend connection test result:', {
+        success: connectionResult.success,
+        error: connectionResult.error,
+        latency: connectionResult.latency
+      });
     }
 
     // Use backend if available
-    return this.backendAvailable === true;
+    const useBackend = this.backendAvailable === true;
+    console.log('[API Service] Using backend:', useBackend);
+    return useBackend;
   }
 
 
@@ -360,39 +392,38 @@ class ApiService {
     return !!token;
   }
 
-  // Test backend connectivity
+  // Test backend connectivity using CORS-enabled API endpoint
   async testConnection(): Promise<{ success: boolean; error?: string; latency?: number }> {
     const startTime = Date.now();
-    // Health endpoint is at root level, not under /api
-    const healthUrl = this.baseURL.replace('/api', '') + '/health';
-    
+    // Use a simple API endpoint that has CORS configured
+    const testUrl = `${this.baseURL}/auth/login`;
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      const response = await fetch(healthUrl, {
-        method: 'GET',
+      // Send an invalid login request to test connectivity
+      // We expect this to fail with authentication error, not CORS error
+      const response = await fetch(testUrl, {
+        method: 'POST',
         headers: API_HEADERS,
+        body: JSON.stringify({ email: 'test@connection.com', password: 'invalid' }),
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
       const latency = Date.now() - startTime;
-      
-      // Health endpoint returns simple JSON response
-      if (data && data.status === 'healthy') {
+
+      // If we get any response (even error), the connection is working
+      if (response.status === 200 || response.status === 400 || response.status === 401) {
+        console.log('[API Service] Connection test successful - got response status:', response.status);
         return { success: true, latency };
       } else {
-        return { success: false, error: 'Health check failed - unexpected response' };
+        throw new Error(`Unexpected HTTP status: ${response.status}`);
       }
     } catch (error) {
       const latency = Date.now() - startTime;
+      console.log('[API Service] Connection test failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown connection error',

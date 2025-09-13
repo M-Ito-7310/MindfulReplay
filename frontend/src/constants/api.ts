@@ -2,28 +2,31 @@
 // 環境変数や現在のホストに基づいて自動的にAPIベースURLを決定
 const getApiBaseUrl = (): string => {
   try {
-    // 環境変数が設定されている場合はそれを使用
-    if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-      if (__DEV__) {
-        console.log('[API Config] Using EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
-      }
-      return process.env.EXPO_PUBLIC_API_URL;
-    }
-    
     // Web環境の場合（window とlocation の存在を安全にチェック）
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
       if (__DEV__) {
         console.log('[API Config] Web environment detected, hostname:', hostname);
       }
-      
-      // ローカル開発環境の場合
+
+      // ローカル開発環境の場合、常にlocalhost:3000を使用
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        if (__DEV__) {
+          console.log('[API Config] Using localhost:3000 for web development');
+        }
         return 'http://localhost:3000/api';
       }
-      
+
       // 同じホストでバックエンドが動いている場合
       return `http://${hostname}:3000/api`;
+    }
+
+    // Native環境の場合は環境変数を優先
+    if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
+      if (__DEV__) {
+        console.log('[API Config] Using EXPO_PUBLIC_API_URL for native:', process.env.EXPO_PUBLIC_API_URL);
+      }
+      return process.env.EXPO_PUBLIC_API_URL;
     }
     
     // Native環境の場合（デフォルト）
