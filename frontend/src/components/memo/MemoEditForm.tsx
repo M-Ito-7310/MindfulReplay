@@ -13,7 +13,6 @@ import { useLayoutTheme } from '@/contexts/LayoutThemeContext';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
 import { MemoForm, Memo } from '@/types';
 
-type TimestampMode = 'auto' | 'manual' | 'none';
 
 interface MemoEditFormProps {
   memo?: Memo;
@@ -21,9 +20,6 @@ interface MemoEditFormProps {
   onSubmit: (data: MemoForm) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
-  showTimestamp?: boolean;
-  timestampMode?: TimestampMode;
-  timestampLocked?: boolean;
 }
 
 export const MemoEditForm: React.FC<MemoEditFormProps> = ({
@@ -32,24 +28,20 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
-  showTimestamp = true,
-  timestampMode = 'auto',
-  timestampLocked = false,
 }) => {
   const [content, setContent] = useState(memo?.content || '');
   const [memoType, setMemoType] = useState<'insight' | 'action' | 'question' | 'summary' | undefined>(memo?.memo_type || undefined);
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(memo?.importance || 3);
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
   const [showFormatOptions, setShowFormatOptions] = useState(false);
-  const [currentTimestampMode, setCurrentTimestampMode] = useState<TimestampMode>(timestampMode);
-  const [timestampEnabled, setTimestampEnabled] = useState(
-    timestampMode !== 'none' && (memo?.timestamp_sec !== undefined || initialTimestamp !== undefined)
-  );
   const { getLayoutStyles } = useLayoutTheme();
 
-  // Get the current timestamp for display
-  const getCurrentTimestamp = (): number | undefined => {
-    return memo?.timestamp_sec || initialTimestamp;
+  // Insert current time as text into memo content
+  const insertCurrentTime = () => {
+    if (initialTimestamp) {
+      const timeText = formatTime(initialTimestamp) + ' ';
+      setContent(prev => prev + timeText);
+    }
   };
 
   // Format time for display
@@ -73,7 +65,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
     try {
       const formData: MemoForm = {
         content: content.trim(),
-        timestamp_sec: (timestampEnabled && showTimestamp) ? getCurrentTimestamp() : undefined,
+        timestamp_sec: undefined, // タイムスタンプはテキストとして管理
         memo_type: memoType || 'insight', // デフォルトでinsightを送信
         importance: importance,
       };
@@ -121,21 +113,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   };
 
 
-  const toggleTimestampEnabled = () => {
-    if (timestampLocked && timestampEnabled) {
-      // ロックされた自動タイムスタンプを無効にする
-      setTimestampEnabled(false);
-      setCurrentTimestampMode('none');
-    } else if (!timestampEnabled) {
-      // タイムスタンプを有効にする（手動モード）
-      setTimestampEnabled(true);
-      setCurrentTimestampMode('manual');
-    } else {
-      // タイムスタンプを無効にする
-      setTimestampEnabled(false);
-      setCurrentTimestampMode('none');
-    }
-  };
 
 
   const suggestTaskFromMemo = (): string => {
@@ -359,62 +336,26 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               textAlignVertical="top"
               editable={!isLoading}
             />
+            {initialTimestamp && (
+              <TouchableOpacity
+                style={[styles.timeInsertButton, {
+                  marginTop: layoutStyles.spacing.sm,
+                  paddingHorizontal: layoutStyles.spacing.md,
+                  paddingVertical: layoutStyles.spacing.sm,
+                  borderRadius: layoutStyles.layout.buttonBorderRadius,
+                }]}
+                onPress={insertCurrentTime}
+                disabled={isLoading}
+              >
+                <Text style={[styles.timeInsertButtonText, {
+                  fontSize: layoutStyles.typography.fontSize.sm,
+                }]}>
+                  🕒 現在時刻を転記 ({initialTimestamp ? formatTime(initialTimestamp) : '0:00'})
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-        {showTimestamp && (
-            <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
-              <View style={[styles.timestampHeader, { marginBottom: layoutStyles.layout.labelSpacing }]}>
-                <Text style={[styles.label, {
-                  fontSize: layoutStyles.typography.fontSize.md,
-                  marginBottom: 0,
-                  fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
-                }]}>動画のタイムスタンプ</Text>
-                <TouchableOpacity
-                  style={[styles.timestampToggleCompact, {
-                    borderRadius: layoutStyles.layout.buttonBorderRadius,
-                  }]}
-                  onPress={toggleTimestampEnabled}
-                  disabled={isLoading}
-                >
-                  <Text style={[
-                    styles.timestampToggleTextCompact,
-                    { fontSize: layoutStyles.typography.fontSize.xs },
-                    !timestampEnabled && styles.timestampToggleTextDisabled
-                  ]}>
-                    {timestampEnabled ? '🕒 有効' : '⏸️ 無効'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-            {timestampEnabled ? (
-              <>
-                <View style={[styles.timestampDisplay, {
-                  borderRadius: layoutStyles.layout.inputBorderRadius,
-                  padding: layoutStyles.layout.inputPadding,
-                }]}>
-                  <Text style={[styles.timestampAutoValue, {
-                    fontSize: layoutStyles.typography.fontSize.md,
-                  }]}>
-                    📍 {getCurrentTimestamp() ? formatTime(getCurrentTimestamp()!) : '0:00'} (現在の動画時刻)
-                  </Text>
-                </View>
-                <Text style={[styles.hint, {
-                  fontSize: layoutStyles.typography.fontSize.sm,
-                  marginTop: layoutStyles.spacing.sm,
-                  lineHeight: layoutStyles.typography.fontSize.sm * layoutStyles.typography.lineHeight.normal,
-                }]}>
-                  動画の現在時刻が自動で設定されます
-                </Text>
-              </>
-            ) : (
-              <Text style={[styles.timestampDisabledText, {
-                fontSize: layoutStyles.typography.fontSize.sm,
-              }]}>
-                タイムスタンプなしのメモとして保存されます
-              </Text>
-            )}
-            </View>
-        )}
 
         {/* タスク提案機能 */}
         {content.trim() && memoType === 'action' && (
@@ -566,13 +507,15 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   // Auto mode read-only display
-  timestampDisplay: {
-    backgroundColor: COLORS.GRAY_50,
+  timeInsertButton: {
+    backgroundColor: COLORS.WHITE,
     borderWidth: 1,
-    borderColor: COLORS.GRAY_300,
-    borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
-    alignItems: 'center',
+    borderColor: COLORS.PRIMARY,
+    alignSelf: 'flex-start',
+  },
+  timeInsertButtonText: {
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   timestampAutoValue: {
     fontSize: TYPOGRAPHY.FONT_SIZE.MD,
