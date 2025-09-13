@@ -1,5 +1,5 @@
 import { getMemoRepository, getVideoRepository } from '../database/repositories';
-import { Memo } from '../database/repositories/memoRepository';
+import { Memo, MemoWithVideo } from '../database/repositories/memoRepository';
 import { PaginatedResponse } from '../types/api';
 
 export class MemoService {
@@ -53,7 +53,7 @@ export class MemoService {
       search?: string;
       tags?: string[];
     } = {}
-  ): Promise<PaginatedResponse<Memo>> {
+  ): Promise<PaginatedResponse<MemoWithVideo>> {
     const memoRepo = getMemoRepository();
     const page = options.page || 1;
     const limit = options.limit || 20;
@@ -61,18 +61,28 @@ export class MemoService {
 
     let result;
     if (options.videoId) {
-      // Get memos for specific video
-      result = await memoRepo.findByUserIdAndVideoId(userId, options.videoId, {
+      // Get memos for specific video (without video info for now)
+      const basicResult = await memoRepo.findByUserIdAndVideoId(userId, options.videoId, {
         limit, offset
       });
+      // Convert to MemoWithVideo format
+      result = {
+        ...basicResult,
+        data: basicResult.data.map(memo => ({ ...memo, video: undefined } as MemoWithVideo))
+      };
     } else if (options.search) {
-      // Search memos by content
-      result = await memoRepo.searchByContent(userId, options.search, {
+      // Search memos by content (without video info for now)
+      const basicResult = await memoRepo.searchByContent(userId, options.search, {
         limit, offset
       });
+      // Convert to MemoWithVideo format
+      result = {
+        ...basicResult,
+        data: basicResult.data.map(memo => ({ ...memo, video: undefined } as MemoWithVideo))
+      };
     } else {
-      // Get all user memos
-      result = await memoRepo.findByUserId(userId, {
+      // Get all user memos with video information
+      result = await memoRepo.findByUserIdWithVideo(userId, {
         limit, offset
       });
     }
@@ -92,10 +102,10 @@ export class MemoService {
     };
   }
 
-  static async getMemoDetails(memoId: string, userId: string): Promise<Memo> {
+  static async getMemoDetails(memoId: string, userId: string): Promise<MemoWithVideo> {
     const memoRepo = getMemoRepository();
-    const memo = await memoRepo.findById(memoId);
-    
+    const memo = await memoRepo.findByIdWithVideo(memoId);
+
     if (!memo) {
       const error = new Error('Memo not found') as any;
       error.status = 404;

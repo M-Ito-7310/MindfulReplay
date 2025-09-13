@@ -1,4 +1,4 @@
-import { MemoRepository, Memo, CreateMemoData, UpdateMemoData } from '../memoRepository';
+import { MemoRepository, Memo, MemoWithVideo, CreateMemoData, UpdateMemoData } from '../memoRepository';
 import { ListResponse, QueryOptions } from '../baseRepository';
 import { mockDb } from '../../mockDatabase';
 
@@ -107,5 +107,56 @@ export class MockMemoRepository implements MemoRepository {
 
   async delete(id: string): Promise<boolean> {
     return mockDb.deleteMemo(id);
+  }
+
+  async findByUserIdWithVideo(userId: string, options?: QueryOptions): Promise<ListResponse<MemoWithVideo>> {
+    let memos = mockDb.getMemosByUserId(userId);
+
+    // Add video information to each memo
+    const memosWithVideo = memos.map(memo => {
+      const video = mockDb.getVideoById(memo.video_id);
+      return {
+        ...memo,
+        video: video ? {
+          id: video.id,
+          title: video.title,
+          youtube_id: video.youtube_id,
+          thumbnail_url: video.thumbnail_url
+        } : undefined
+      };
+    });
+
+    // Apply pagination if specified
+    const total = memosWithVideo.length;
+    let result = memosWithVideo;
+    if (options?.offset) {
+      result = result.slice(options.offset);
+    }
+    if (options?.limit) {
+      result = result.slice(0, options.limit);
+    }
+
+    return {
+      data: result,
+      total,
+      limit: options?.limit,
+      offset: options?.offset
+    };
+  }
+
+  async findByIdWithVideo(id: string): Promise<MemoWithVideo | null> {
+    const memo = mockDb.getMemoById(id);
+    if (!memo) return null;
+
+    const video = mockDb.getVideoById(memo.video_id);
+    return {
+      ...memo,
+      video: video ? {
+        id: video.id,
+        title: video.title,
+        youtube_id: video.youtube_id,
+        thumbnail_url: video.thumbnail_url
+      } : undefined
+    };
   }
 }

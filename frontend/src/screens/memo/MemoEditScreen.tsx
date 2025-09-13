@@ -127,6 +127,17 @@ export const MemoEditScreen: React.FC<MemoEditScreenProps> = ({ navigation, rout
         <Text style={styles.headerTitle}>メモを編集</Text>
       </View>
 
+      {memo.video && (
+        <View style={styles.videoInfo}>
+          <View style={styles.videoIcon}>
+            <Text style={styles.videoIconText}>📹</Text>
+          </View>
+          <Text style={styles.videoTitle} numberOfLines={2}>
+            {memo.video.title}
+          </Text>
+        </View>
+      )}
+
       <MemoEditForm
         memo={memo}
         onSubmit={handleSubmit}
@@ -173,5 +184,27 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.MD,
     color: COLORS.ERROR,
+  },
+  videoInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.GRAY_50,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    marginHorizontal: SPACING.MD,
+    marginTop: SPACING.SM,
+    borderRadius: SPACING.SM,
+  },
+  videoIcon: {
+    marginRight: SPACING.SM,
+  },
+  videoIconText: {
+    fontSize: 16,
+  },
+  videoTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    flex: 1,
   },
 });

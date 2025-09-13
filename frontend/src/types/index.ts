@@ -103,6 +103,12 @@ export interface Memo {
   created_at: string;
   updated_at: string;
   tags?: Tag[];
+  video?: {
+    id: string;
+    title: string;
+    youtube_id: string;
+    thumbnail_url: string | null;
+  };
 }
 
 // Viewing Session Types

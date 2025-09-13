@@ -188,76 +188,78 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   return (
     <ScrollView style={[styles.container]} showsVerticalScrollIndicator={false}>
       <View style={[styles.form, { padding: layoutStyles.layout.formPadding }]}>
-        {/* テンプレート選択 */}
-        <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
-            <Text style={[styles.label, { 
-              fontSize: layoutStyles.typography.fontSize.md,
-              marginBottom: layoutStyles.layout.labelSpacing,
-              fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
-            }]}>メモのフォーマット</Text>
-            <TouchableOpacity
-              style={[styles.formatDropdown, {
-                minHeight: layoutStyles.layout.buttonHeight * 1.2,
-                paddingHorizontal: layoutStyles.spacing.sm,
-                paddingVertical: layoutStyles.spacing.sm,
-                borderRadius: layoutStyles.layout.inputBorderRadius,
-              }]}
-              onPress={() => {
-                setShowFormatOptions(!showFormatOptions);
-                if (showImportanceOptions) setShowImportanceOptions(false);
-              }}
-              disabled={isLoading}
-            >
-              <Text style={[styles.formatDropdownText, { 
-                fontSize: layoutStyles.typography.fontSize.sm,
-                lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
-                flex: 1,
-                flexWrap: 'wrap',
-              }]} numberOfLines={2}>
-                {memoType ? getMemoTypeLabel(memoType) : 'テンプレートなし'}
-              </Text>
-              <Text style={[styles.dropdownArrow, { fontSize: layoutStyles.typography.fontSize.sm }]}>
-                {showFormatOptions ? '▲' : '▼'}
-              </Text>
-            </TouchableOpacity>
-            
-            {showFormatOptions && (
-              <View style={[styles.formatOptions, { 
-                borderRadius: layoutStyles.layout.inputBorderRadius,
-                marginTop: layoutStyles.spacing.xs,
-              }]}>
-                {(['insight', 'action', 'question', 'summary'] as const).map((type, index) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.formatOption,
-                      {
-                        padding: layoutStyles.spacing.md,
-                      },
-                      memoType === type && styles.formatOptionActive,
-                      index === 3 && styles.formatOptionLast, // 最後の要素
-                    ]}
-                    onPress={() => {
-                      applyTemplate(type);
-                      setShowFormatOptions(false);
-                    }}
-                    disabled={isLoading}
-                  >
-                    <Text style={[
-                      styles.formatOptionText,
-                      { 
-                        fontSize: layoutStyles.typography.fontSize.sm,
-                        lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
-                      },
-                      memoType === type && styles.formatOptionTextActive,
-                    ]}>
-                      {getMemoTypeLabel(type)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+        {/* テンプレート選択 - 新規作成時のみ表示 */}
+        {!memo && (
+          <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
+              <Text style={[styles.label, {
+                fontSize: layoutStyles.typography.fontSize.md,
+                marginBottom: layoutStyles.layout.labelSpacing,
+                fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
+              }]}>メモのフォーマット</Text>
+              <TouchableOpacity
+                style={[styles.formatDropdown, {
+                  minHeight: layoutStyles.layout.buttonHeight * 1.2,
+                  paddingHorizontal: layoutStyles.spacing.sm,
+                  paddingVertical: layoutStyles.spacing.sm,
+                  borderRadius: layoutStyles.layout.inputBorderRadius,
+                }]}
+                onPress={() => {
+                  setShowFormatOptions(!showFormatOptions);
+                  if (showImportanceOptions) setShowImportanceOptions(false);
+                }}
+                disabled={isLoading}
+              >
+                <Text style={[styles.formatDropdownText, {
+                  fontSize: layoutStyles.typography.fontSize.sm,
+                  lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                  flex: 1,
+                  flexWrap: 'wrap',
+                }]} numberOfLines={2}>
+                  {memoType ? getMemoTypeLabel(memoType) : 'テンプレートなし'}
+                </Text>
+                <Text style={[styles.dropdownArrow, { fontSize: layoutStyles.typography.fontSize.sm }]}>
+                  {showFormatOptions ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+
+              {showFormatOptions && (
+                <View style={[styles.formatOptions, {
+                  borderRadius: layoutStyles.layout.inputBorderRadius,
+                  marginTop: layoutStyles.spacing.xs,
+                }]}>
+                  {(['insight', 'action', 'question', 'summary'] as const).map((type, index) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.formatOption,
+                        {
+                          padding: layoutStyles.spacing.md,
+                        },
+                        memoType === type && styles.formatOptionActive,
+                        index === 3 && styles.formatOptionLast, // 最後の要素
+                      ]}
+                      onPress={() => {
+                        applyTemplate(type);
+                        setShowFormatOptions(false);
+                      }}
+                      disabled={isLoading}
+                    >
+                      <Text style={[
+                        styles.formatOptionText,
+                        {
+                          fontSize: layoutStyles.typography.fontSize.sm,
+                          lineHeight: layoutStyles.typography.fontSize.sm * 1.3,
+                        },
+                        memoType === type && styles.formatOptionTextActive,
+                      ]}>
+                        {getMemoTypeLabel(type)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+        )}
 
           {/* 重要度選択 */}
           <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>

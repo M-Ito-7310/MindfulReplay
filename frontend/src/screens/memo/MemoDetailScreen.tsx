@@ -191,6 +191,17 @@ export const MemoDetailScreen: React.FC<MemoDetailScreenProps> = ({ navigation, 
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.memoCard}>
+          {memo.video && (
+            <View style={styles.videoInfo}>
+              <View style={styles.videoIcon}>
+                <Text style={styles.videoIconText}>📹</Text>
+              </View>
+              <Text style={styles.videoTitle} numberOfLines={2}>
+                {memo.video.title}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.memoHeader}>
             <View style={styles.memoHeaderLeft}>
               <Text style={styles.memoType}>
@@ -386,5 +397,26 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.MD,
     color: COLORS.ERROR,
+  },
+  videoInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.GRAY_50,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.SM,
+    marginBottom: SPACING.MD,
+  },
+  videoIcon: {
+    marginRight: SPACING.SM,
+  },
+  videoIconText: {
+    fontSize: 16,
+  },
+  videoTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.MD,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    flex: 1,
   },
 });

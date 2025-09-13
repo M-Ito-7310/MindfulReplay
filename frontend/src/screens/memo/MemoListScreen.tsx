@@ -55,10 +55,10 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
       }
 
       const response = await apiService.get(API_CONFIG.ENDPOINTS.MEMOS, { params });
-      
+
       if (response.success && response.data) {
         const newMemos = response.data.items || [];
-        
+
         if (isRefresh || pageNum === 1) {
           setMemos(newMemos);
         } else {

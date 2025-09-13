@@ -89,6 +89,17 @@ export const MemoCard: React.FC<MemoCardProps> = ({
         </View>
       </View>
 
+      {memo.video && (
+        <View style={styles.videoInfo}>
+          <View style={styles.videoIcon}>
+            <Text style={styles.videoIconText}>📹</Text>
+          </View>
+          <Text style={styles.videoTitle} numberOfLines={1}>
+            {memo.video.title}
+          </Text>
+        </View>
+      )}
+
       <Text style={styles.content} numberOfLines={4}>
         {memo.content}
       </Text>
@@ -238,5 +249,26 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,
     color: COLORS.SUCCESS,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+  },
+  videoInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.GRAY_50,
+    paddingHorizontal: SPACING.SM,
+    paddingVertical: SPACING.XS,
+    borderRadius: BORDER_RADIUS.SM,
+    marginBottom: SPACING.SM,
+  },
+  videoIcon: {
+    marginRight: SPACING.XS,
+  },
+  videoIconText: {
+    fontSize: 14,
+  },
+  videoTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+    flex: 1,
   },
 });
