@@ -38,7 +38,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
 
   // Insert current time as text into memo content
   const insertCurrentTime = () => {
-    if (initialTimestamp) {
+    if (initialTimestamp !== undefined) {
       const timeText = formatTime(initialTimestamp) + ' ';
       setContent(prev => prev + timeText);
     }
@@ -336,7 +336,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
               textAlignVertical="top"
               editable={!isLoading}
             />
-            {initialTimestamp && (
+            {initialTimestamp !== undefined && (
               <TouchableOpacity
                 style={[styles.timeInsertButton, {
                   marginTop: layoutStyles.spacing.sm,
@@ -350,7 +350,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
                 <Text style={[styles.timeInsertButtonText, {
                   fontSize: layoutStyles.typography.fontSize.sm,
                 }]}>
-                  🕒 現在時刻を転記 ({initialTimestamp ? formatTime(initialTimestamp) : '0:00'})
+                  🕒 現在時刻を転記 ({formatTime(initialTimestamp)})
                 </Text>
               </TouchableOpacity>
             )}
