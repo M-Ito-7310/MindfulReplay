@@ -33,12 +33,10 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   onCancel,
   isLoading = false,
   showTimestamp = true,
-  timestampMode = 'manual',
+  timestampMode = 'auto',
   timestampLocked = false,
 }) => {
   const [content, setContent] = useState(memo?.content || '');
-  const [timestampMinutes, setTimestampMinutes] = useState('');
-  const [timestampSeconds, setTimestampSeconds] = useState('');
   const [memoType, setMemoType] = useState<'insight' | 'action' | 'question' | 'summary' | undefined>(memo?.memo_type || undefined);
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(memo?.importance || 3);
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
@@ -49,21 +47,20 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   );
   const { getLayoutStyles } = useLayoutTheme();
 
-  useEffect(() => {
-    const timestamp = memo?.timestamp_sec || initialTimestamp;
-    if (timestamp) {
-      const minutes = Math.floor(timestamp / 60);
-      const seconds = timestamp % 60;
-      setTimestampMinutes(minutes.toString());
-      setTimestampSeconds(seconds.toString());
-    }
-  }, [memo, initialTimestamp]);
+  // Get the current timestamp for display
+  const getCurrentTimestamp = (): number | undefined => {
+    return memo?.timestamp_sec || initialTimestamp;
+  };
 
-  const formatTimestamp = (minutes: string, seconds: string): number | undefined => {
-    const min = parseInt(minutes) || 0;
-    const sec = parseInt(seconds) || 0;
-    if (min === 0 && sec === 0) return undefined;
-    return min * 60 + sec;
+  // Format time for display
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleSubmit = async () => {
@@ -72,10 +69,11 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
       return;
     }
 
+
     try {
       const formData: MemoForm = {
         content: content.trim(),
-        timestamp_sec: (timestampEnabled && showTimestamp) ? formatTimestamp(timestampMinutes, timestampSeconds) : undefined,
+        timestamp_sec: (timestampEnabled && showTimestamp) ? getCurrentTimestamp() : undefined,
         memo_type: memoType || 'insight', // デフォルトでinsightを送信
         importance: importance,
       };
@@ -86,24 +84,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
     }
   };
 
-  const handleTimestampMinutesChange = (text: string) => {
-    const numericText = text.replace(/[^0-9]/g, '');
-    setTimestampMinutes(numericText);
-  };
-
-  const handleTimestampSecondsChange = (text: string) => {
-    const numericText = text.replace(/[^0-9]/g, '');
-    const value = parseInt(numericText) || 0;
-    if (value >= 60) {
-      const extraMinutes = Math.floor(value / 60);
-      const remainingSeconds = value % 60;
-      const currentMinutes = parseInt(timestampMinutes) || 0;
-      setTimestampMinutes((currentMinutes + extraMinutes).toString());
-      setTimestampSeconds(remainingSeconds.toString());
-    } else {
-      setTimestampSeconds(numericText);
-    }
-  };
 
   const getTemplateContent = (type: 'insight' | 'action' | 'question' | 'summary'): string => {
     switch (type) {
@@ -162,9 +142,6 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
     }
   };
 
-  const switchToManualMode = () => {
-    setCurrentTimestampMode('manual');
-  };
 
   const suggestTaskFromMemo = (): string => {
     if (!content.trim()) return '';
@@ -392,23 +369,21 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
         {showTimestamp && (
             <View style={[styles.field, { marginBottom: layoutStyles.layout.fieldSpacing }]}>
               <View style={[styles.timestampHeader, { marginBottom: layoutStyles.layout.labelSpacing }]}>
-                <Text style={[styles.label, { 
+                <Text style={[styles.label, {
                   fontSize: layoutStyles.typography.fontSize.md,
                   marginBottom: 0,
                   fontWeight: layoutStyles.typography.fontWeight.MEDIUM,
                 }]}>動画のタイムスタンプ</Text>
                 <TouchableOpacity
-                  style={[styles.timestampToggle, {
-                    paddingHorizontal: layoutStyles.spacing.sm,
-                    paddingVertical: layoutStyles.spacing.xs,
+                  style={[styles.timestampToggleCompact, {
                     borderRadius: layoutStyles.layout.buttonBorderRadius,
                   }]}
                   onPress={toggleTimestampEnabled}
                   disabled={isLoading}
                 >
                   <Text style={[
-                    styles.timestampToggleText,
-                    { fontSize: layoutStyles.typography.fontSize.sm },
+                    styles.timestampToggleTextCompact,
+                    { fontSize: layoutStyles.typography.fontSize.xs },
                     !timestampEnabled && styles.timestampToggleTextDisabled
                   ]}>
                     {timestampEnabled ? '🕒 有効' : '⏸️ 無効'}
@@ -418,111 +393,30 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
 
             {timestampEnabled ? (
               <>
-                {currentTimestampMode === 'auto' && timestampLocked ? (
-                  // Auto mode: Read-only display
-                  <View style={[styles.timestampReadOnly, {
-                    borderRadius: layoutStyles.layout.inputBorderRadius,
-                    padding: layoutStyles.layout.inputPadding,
+                <View style={[styles.timestampDisplay, {
+                  borderRadius: layoutStyles.layout.inputBorderRadius,
+                  padding: layoutStyles.layout.inputPadding,
+                }]}>
+                  <Text style={[styles.timestampAutoValue, {
+                    fontSize: layoutStyles.typography.fontSize.md,
                   }]}>
-                    <Text style={[styles.timestampAutoValue, {
-                      fontSize: layoutStyles.typography.fontSize.md,
-                    }]}>
-                      📍 {formatTime(formatTimestamp(timestampMinutes, timestampSeconds) || 0)} (自動設定)
-                    </Text>
-                    <TouchableOpacity
-                      style={[styles.editTimestampButton, {
-                        paddingHorizontal: layoutStyles.spacing.sm,
-                        paddingVertical: layoutStyles.spacing.xs,
-                        borderRadius: layoutStyles.layout.buttonBorderRadius,
-                      }]}
-                      onPress={switchToManualMode}
-                      disabled={isLoading}
-                    >
-                      <Text style={[styles.editTimestampButtonText, {
-                        fontSize: layoutStyles.typography.fontSize.sm,
-                      }]}>編集する</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  // Manual mode: Editable inputs
-                  <View style={[styles.timestampContainer, {
-                    borderRadius: layoutStyles.layout.inputBorderRadius,
-                    padding: layoutStyles.layout.inputPadding,
-                  }]}>
-                    <View style={styles.timestampField}>
-                      <Input
-                        value={timestampMinutes}
-                        onChangeText={handleTimestampMinutesChange}
-                        placeholder="0"
-                        keyboardType="numeric"
-                        style={[styles.timestampInput, {
-                          fontSize: layoutStyles.typography.fontSize.md,
-                        }]}
-                        editable={!isLoading}
-                      />
-                      <Text style={[styles.timestampUnit, {
-                        fontSize: layoutStyles.typography.fontSize.sm,
-                        marginLeft: layoutStyles.spacing.xs,
-                      }]}>分</Text>
-                    </View>
-                    <Text style={[styles.timestampSeparator, {
-                      fontSize: layoutStyles.typography.fontSize.lg,
-                      marginHorizontal: layoutStyles.spacing.sm,
-                    }]}>:</Text>
-                    <View style={styles.timestampField}>
-                      <Input
-                        value={timestampSeconds}
-                        onChangeText={handleTimestampSecondsChange}
-                        placeholder="0"
-                        keyboardType="numeric"
-                        style={[styles.timestampInput, {
-                          fontSize: layoutStyles.typography.fontSize.md,
-                        }]}
-                        editable={!isLoading}
-                      />
-                      <Text style={[styles.timestampUnit, {
-                        fontSize: layoutStyles.typography.fontSize.sm,
-                        marginLeft: layoutStyles.spacing.xs,
-                      }]}>秒</Text>
-                    </View>
-                  </View>
-                )}
+                    📍 {getCurrentTimestamp() ? formatTime(getCurrentTimestamp()!) : '0:00'} (現在の動画時刻)
+                  </Text>
+                </View>
                 <Text style={[styles.hint, {
                   fontSize: layoutStyles.typography.fontSize.sm,
                   marginTop: layoutStyles.spacing.sm,
                   lineHeight: layoutStyles.typography.fontSize.sm * layoutStyles.typography.lineHeight.normal,
                 }]}>
-                  {currentTimestampMode === 'auto' && timestampLocked
-                    ? '動画の現在時刻が自動で設定されています'
-                    : '動画の特定の時間に関連するメモの場合は、タイムスタンプを設定してください'
-                  }
+                  動画の現在時刻が自動で設定されます
                 </Text>
               </>
             ) : (
-              <View style={[styles.timestampDisabled, {
-                borderRadius: layoutStyles.layout.inputBorderRadius,
-                padding: layoutStyles.layout.inputPadding,
+              <Text style={[styles.timestampDisabledText, {
+                fontSize: layoutStyles.typography.fontSize.sm,
               }]}>
-                <Text style={[styles.timestampDisabledText, {
-                  fontSize: layoutStyles.typography.fontSize.sm,
-                  marginBottom: layoutStyles.spacing.sm,
-                }]}>
-                  タイムスタンプなしのメモとして保存されます
-                </Text>
-                <TouchableOpacity
-                  style={[styles.enableTimestampButton, {
-                    paddingHorizontal: layoutStyles.spacing.md,
-                    paddingVertical: layoutStyles.spacing.sm,
-                    borderRadius: layoutStyles.layout.buttonBorderRadius,
-                  }]}
-                  onPress={toggleTimestampEnabled}
-                  disabled={isLoading}
-                >
-                  <Text style={[styles.enableTimestampButtonText, {
-                    fontSize: layoutStyles.typography.fontSize.sm,
-                  }]}>タイムスタンプを追加</Text>
-                </TouchableOpacity>
-              </View>
+                タイムスタンプなしのメモとして保存されます
+              </Text>
             )}
             </View>
         )}
@@ -664,33 +558,30 @@ const styles = StyleSheet.create({
   timestampToggleTextDisabled: {
     color: COLORS.WHITE,
   },
+  // Compact toggle styles
+  timestampToggleCompact: {
+    paddingHorizontal: SPACING.XS,
+    paddingVertical: 2,
+    backgroundColor: COLORS.PRIMARY,
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
+  },
+  timestampToggleTextCompact: {
+    color: COLORS.WHITE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+  },
   // Auto mode read-only display
-  timestampReadOnly: {
+  timestampDisplay: {
     backgroundColor: COLORS.GRAY_50,
     borderWidth: 1,
     borderColor: COLORS.GRAY_300,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
   timestampAutoValue: {
     fontSize: TYPOGRAPHY.FONT_SIZE.MD,
     color: COLORS.TEXT_PRIMARY,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
-  },
-  editTimestampButton: {
-    paddingHorizontal: SPACING.SM,
-    paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.WHITE,
-    borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
-    borderRadius: BORDER_RADIUS.SM,
-  },
-  editTimestampButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE.SM,
-    color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   // Disabled state
@@ -708,6 +599,18 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.SM,
     textAlign: 'center',
   },
+  // Compact disabled state
+  timestampDisabledCompact: {
+    backgroundColor: COLORS.GRAY_50,
+    borderWidth: 1,
+    borderColor: COLORS.GRAY_300,
+    paddingHorizontal: SPACING.XS,
+    paddingVertical: 4,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    minWidth: 180,
+    maxWidth: 220,
+  },
   enableTimestampButton: {
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
@@ -718,6 +621,18 @@ const styles = StyleSheet.create({
   },
   enableTimestampButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZE.SM,
+    color: COLORS.PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
+  },
+  // Compact button styles
+  enableTimestampButtonCompact: {
+    paddingHorizontal: SPACING.XS,
+    paddingVertical: 2,
+    backgroundColor: COLORS.WHITE,
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
+  },
+  enableTimestampButtonTextCompact: {
     color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
