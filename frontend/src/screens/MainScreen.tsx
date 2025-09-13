@@ -12,6 +12,7 @@ import { VideoListScreen } from './video/VideoListScreen';
 import { VideoPlayerScreen } from './video/VideoPlayerScreen';
 import { MemoListScreen } from './memo/MemoListScreen';
 import { MemoCreateScreen } from './memo/MemoCreateScreen';
+import { MemoDetailScreen } from './memo/MemoDetailScreen';
 import { MemoEditScreen } from './memo/MemoEditScreen';
 import { TaskListScreen } from './task/TaskListScreen';
 import { TaskCreateScreen } from './task/TaskCreateScreen';
@@ -26,7 +27,7 @@ interface MainScreenProps {
 }
 
 type TabType = 'dashboard' | 'videos' | 'memos' | 'tasks';
-type ScreenType = 'main' | 'video-player' | 'memo-create' | 'memo-edit' | 'task-create' | 'task-edit';
+type ScreenType = 'main' | 'video-player' | 'memo-create' | 'memo-detail' | 'memo-edit' | 'task-create' | 'task-edit';
 
 interface ScreenState {
   type: ScreenType;
@@ -54,6 +55,9 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
           break;
         case 'MemoCreate':
           setScreenState({ type: 'memo-create', params });
+          break;
+        case 'MemoDetail':
+          setScreenState({ type: 'memo-detail', params });
           break;
         case 'MemoEdit':
           setScreenState({ type: 'memo-edit', params });
@@ -161,10 +165,21 @@ export const MainScreen: React.FC<MainScreenProps> = ({ navigation, onLogout }) 
     );
   }
 
+  if (screenState.type === 'memo-detail') {
+    return (
+      <View style={styles.container}>
+        <MemoDetailScreen
+          navigation={enhancedNavigation}
+          route={{ params: screenState.params }}
+        />
+      </View>
+    );
+  }
+
   if (screenState.type === 'memo-edit') {
     return (
       <View style={styles.container}>
-        <MemoEditScreen 
+        <MemoEditScreen
           navigation={enhancedNavigation}
           route={{ params: screenState.params }}
         />
