@@ -34,14 +34,19 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
   const [importance, setImportance] = useState<1 | 2 | 3 | 4 | 5>(memo?.importance || 3);
   const [showImportanceOptions, setShowImportanceOptions] = useState(false);
   const [showFormatOptions, setShowFormatOptions] = useState(false);
+  const [includeTimestamp, setIncludeTimestamp] = useState(false);
   const { getLayoutStyles } = useLayoutTheme();
 
-  // Insert current time as text into memo content
-  const insertCurrentTime = () => {
-    if (initialTimestamp !== undefined) {
+  // Prepare final content with timestamp if needed
+  const getFinalContent = (): string => {
+    if (includeTimestamp && initialTimestamp !== undefined) {
       const timeText = formatTime(initialTimestamp) + ' ';
-      setContent(prev => prev + timeText);
+      // Insert timestamp at the beginning of first line if not already present
+      if (!content.startsWith(timeText)) {
+        return timeText + content;
+      }
     }
+    return content;
   };
 
   // Format time for display
@@ -64,7 +69,7 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
 
     try {
       const formData: MemoForm = {
-        content: content.trim(),
+        content: getFinalContent().trim(),
         timestamp_sec: undefined, // タイムスタンプはテキストとして管理
         memo_type: memoType || 'insight', // デフォルトでinsightを送信
         importance: importance,
@@ -338,20 +343,29 @@ export const MemoEditForm: React.FC<MemoEditFormProps> = ({
             />
             {initialTimestamp !== undefined && (
               <TouchableOpacity
-                style={[styles.timeInsertButton, {
+                style={[styles.timestampCheckbox, {
                   marginTop: layoutStyles.spacing.sm,
-                  paddingHorizontal: layoutStyles.spacing.md,
                   paddingVertical: layoutStyles.spacing.sm,
-                  borderRadius: layoutStyles.layout.buttonBorderRadius,
                 }]}
-                onPress={insertCurrentTime}
+                onPress={() => setIncludeTimestamp(!includeTimestamp)}
                 disabled={isLoading}
               >
-                <Text style={[styles.timeInsertButtonText, {
-                  fontSize: layoutStyles.typography.fontSize.sm,
-                }]}>
-                  🕒 現在時刻を転記 ({formatTime(initialTimestamp)})
-                </Text>
+                <View style={styles.checkboxRow}>
+                  <View style={[styles.checkbox, {
+                    borderColor: includeTimestamp ? COLORS.PRIMARY : COLORS.GRAY_300,
+                    backgroundColor: includeTimestamp ? COLORS.PRIMARY : COLORS.WHITE,
+                  }]}>
+                    {includeTimestamp && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={[styles.checkboxLabel, {
+                    fontSize: layoutStyles.typography.fontSize.sm,
+                    color: includeTimestamp ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY,
+                  }]}>
+                    メモにタイムスタンプを追記する ({formatTime(initialTimestamp)})
+                  </Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -507,14 +521,29 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   // Auto mode read-only display
-  timeInsertButton: {
-    backgroundColor: COLORS.WHITE,
-    borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+  timestampCheckbox: {
     alignSelf: 'flex-start',
   },
-  timeInsertButtonText: {
-    color: COLORS.PRIMARY,
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: 4,
+    marginRight: SPACING.SM,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    color: COLORS.WHITE,
+    fontSize: 12,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHT.BOLD,
+  },
+  checkboxLabel: {
+    flex: 1,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT.MEDIUM,
   },
   timestampAutoValue: {
