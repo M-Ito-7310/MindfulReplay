@@ -21,6 +21,7 @@ interface VideoPlayerScreenProps {
   route?: {
     params?: {
       videoId: string;
+      initialTime?: number;
     };
   };
 }
@@ -45,6 +46,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
   const isLandscape = dimensions.width > dimensions.height;
 
   const videoId = route?.params?.videoId;
+  const initialTime = route?.params?.initialTime;
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -62,33 +64,37 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ navigation
     }
   }, [videoId]);
 
+  // Apply initial time when video is loaded
+  useEffect(() => {
+    if (video && initialTime !== undefined) {
+      // Wait for player to be ready, then apply initial time
+      const checkAndSeek = () => {
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current.seekTo(initialTime);
+        } else {
+          // Retry until player is ready
+          setTimeout(checkAndSeek, 500);
+        }
+      };
+
+      // Start checking after a short delay to let player initialize
+      const initialDelay = Platform.OS === 'ios' ? 1500 : 1000;
+      setTimeout(checkAndSeek, initialDelay);
+    }
+  }, [video, initialTime]);
+
   const loadVideo = async () => {
     if (!videoId) return;
-
-    // Simplified logging
-    if (__DEV__) {
-      console.log('[VideoPlayerScreen] Loading:', videoId);
-    }
 
     setIsLoadingVideo(true);
     try {
       const response = await apiService.get(`${API_CONFIG.ENDPOINTS.VIDEOS}/${videoId}`);
-      
+
       if (response.success && response.data) {
         const videoData = response.data.video || response.data;
-        if (__DEV__) {
-          console.log('[VideoPlayerScreen] Loaded:', videoData.title?.substring(0, 30) + '...');
-        }
         setVideo(videoData);
-      } else {
-        if (__DEV__) {
-          console.warn('[VideoPlayerScreen] Load failed');
-        }
       }
     } catch (error) {
-      if (__DEV__) {
-        console.error('[VideoPlayerScreen] Load error:', error.message || error);
-      }
       Alert.alert(
         'エラー',
         '動画の読み込みに失敗しました',

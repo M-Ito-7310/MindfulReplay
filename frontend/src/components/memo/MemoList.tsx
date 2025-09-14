@@ -20,12 +20,14 @@ interface MemoListProps {
   onMemoEdit?: (memo: Memo) => void;
   onMemoDelete?: (memo: Memo) => void;
   onMemoConvertToTask?: (memo: Memo) => void;
+  onTimestampPress?: (seconds: number, videoId?: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
   emptyTitle?: string;
   emptySubtitle?: string;
   onAddMemo?: () => void;
   showActions?: boolean;
+  scrollEnabled?: boolean;
 }
 
 export const MemoList: React.FC<MemoListProps> = ({
@@ -37,12 +39,14 @@ export const MemoList: React.FC<MemoListProps> = ({
   onMemoEdit,
   onMemoDelete,
   onMemoConvertToTask,
+  onTimestampPress,
   onLoadMore,
   hasMore = false,
   emptyTitle = 'メモがありません',
   emptySubtitle = 'メモを追加して学習内容を記録しましょう',
   onAddMemo,
   showActions = true,
+  scrollEnabled = true,
 }) => {
   const renderMemoItem = ({ item }: { item: Memo }) => (
     <MemoCard
@@ -51,6 +55,7 @@ export const MemoList: React.FC<MemoListProps> = ({
       onEdit={onMemoEdit ? () => onMemoEdit(item) : undefined}
       onDelete={onMemoDelete ? () => onMemoDelete(item) : undefined}
       onConvertToTask={onMemoConvertToTask ? () => onMemoConvertToTask(item) : undefined}
+      onTimestampPress={onTimestampPress}
       showActions={showActions}
     />
   );
@@ -105,8 +110,9 @@ export const MemoList: React.FC<MemoListProps> = ({
         memos.length === 0 && styles.emptyListContent,
       ]}
       showsVerticalScrollIndicator={false}
+      scrollEnabled={scrollEnabled}
       refreshControl={
-        onRefresh ? (
+        onRefresh && scrollEnabled ? (
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
@@ -117,8 +123,8 @@ export const MemoList: React.FC<MemoListProps> = ({
       }
       ListEmptyComponent={renderEmptyState}
       ListFooterComponent={renderFooter}
-      onEndReached={hasMore ? onLoadMore : undefined}
-      onEndReachedThreshold={0.1}
+      onEndReached={hasMore && scrollEnabled ? onLoadMore : undefined}
+      onEndReachedThreshold={scrollEnabled ? 0.1 : 0}
     />
   );
 };

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { TimestampText } from '@/components/common';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
 import { Memo } from '@/types';
 
@@ -14,6 +15,7 @@ interface MemoCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onConvertToTask?: () => void;
+  onTimestampPress?: (seconds: number, videoId?: string) => void;
   showActions?: boolean;
 }
 
@@ -23,6 +25,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({
   onEdit,
   onDelete,
   onConvertToTask,
+  onTimestampPress,
   showActions = true,
 }) => {
   const formatTimestamp = (seconds?: number): string => {
@@ -100,9 +103,12 @@ export const MemoCard: React.FC<MemoCardProps> = ({
         </View>
       )}
 
-      <Text style={styles.content} numberOfLines={4}>
-        {memo.content}
-      </Text>
+      <TimestampText
+        content={memo.content}
+        videoId={memo.video_id}
+        onTimestampPress={onTimestampPress}
+        style={styles.content}
+      />
 
       {memo.tags && memo.tags.length > 0 && (
         <View style={styles.tagsContainer}>

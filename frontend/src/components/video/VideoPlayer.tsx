@@ -88,9 +88,6 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
   };
 
   const handlePlaybackStateChange = (state: 'playing' | 'paused' | 'ended') => {
-    if (__DEV__ && state !== playbackState) {
-      console.log('[VideoPlayer] State:', playbackState, '→', state);
-    }
     setPlaybackState(state);
     onPlaybackStateChange?.(state);
   };
@@ -112,12 +109,6 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
 
   const getVideoId = () => {
     const videoId = extractVideoId(video?.youtube_url || video?.youtube_id);
-    
-    // Only log extraction issues
-    if (__DEV__ && !videoId) {
-      console.warn('[VideoPlayer] Failed to extract video ID from:', video?.youtube_url, video?.youtube_id);
-    }
-    
     return videoId;
   };
 
@@ -129,9 +120,8 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
   const generalMemos = memos
     .filter(memo => memo.timestamp_sec === undefined || memo.timestamp_sec === null);
 
-  // Only log essential rendering info once
-  if (__DEV__ && video && lastRenderedVideoRef.current !== video.id) {
-    console.log('[VideoPlayer] Render:', video.id, video.title?.substring(0, 30) + '...');
+  // Track rendered video to avoid duplicate renders
+  if (video && lastRenderedVideoRef.current !== video.id) {
     lastRenderedVideoRef.current = video.id;
   }
 
@@ -154,14 +144,10 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
             onTimeUpdate={handleTimeUpdate}
             onPlaybackStateChange={handlePlaybackStateChange}
             onError={(error) => {
-              if (__DEV__) {
-                console.error('[VideoPlayer] Player error:', getVideoId(), error);
-              }
+              console.error('[VideoPlayer] Player error:', error);
             }}
             onReady={() => {
-              if (__DEV__) {
-                console.log('[VideoPlayer] Player ready:', getVideoId());
-              }
+              console.log('[VideoPlayer] Player ready');
             }}
             autoplay={false}
           />
@@ -182,14 +168,10 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
             onTimeUpdate={handleTimeUpdate}
             onPlaybackStateChange={handlePlaybackStateChange}
             onError={(error) => {
-              if (__DEV__) {
-                console.error('[VideoPlayer] Player error:', getVideoId(), error);
-              }
+              console.error('[VideoPlayer] Player error:', error);
             }}
             onReady={() => {
-              if (__DEV__) {
-                console.log('[VideoPlayer] Player ready:', getVideoId());
-              }
+              console.log('[VideoPlayer] Player ready');
             }}
             autoplay={false}
           />
@@ -289,6 +271,7 @@ export const VideoPlayer = React.forwardRef<any, VideoPlayerProps>(({
                     emptyTitle="一般メモがありません"
                     emptySubtitle=""
                     showActions={true}
+                    scrollEnabled={false}
                   />
                 </View>
               )}

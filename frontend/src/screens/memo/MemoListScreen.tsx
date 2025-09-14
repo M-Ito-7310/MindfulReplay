@@ -136,6 +136,12 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
     }
   };
 
+  const handleTimestampPress = (seconds: number, videoId?: string) => {
+    if (navigation && videoId) {
+      navigation.navigate('VideoPlayer', { videoId, initialTime: seconds });
+    }
+  };
+
   const getTitle = () => {
     return videoId ? '動画のメモ' : 'すべてのメモ';
   };
@@ -168,6 +174,7 @@ export const MemoListScreen: React.FC<MemoListScreenProps> = ({ navigation, rout
         onMemoEdit={handleMemoEdit}
         onMemoDelete={handleMemoDelete}
         onMemoConvertToTask={handleConvertToTask}
+        onTimestampPress={handleTimestampPress}
         onLoadMore={handleLoadMore}
         hasMore={hasMore}
         emptyTitle={getEmptyTitle()}

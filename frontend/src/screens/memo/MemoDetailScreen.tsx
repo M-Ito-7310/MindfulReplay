@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { TimestampText } from '@/components/common';
 import { apiService } from '@/services/api';
 import { API_CONFIG } from '@/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
@@ -68,6 +69,12 @@ export const MemoDetailScreen: React.FC<MemoDetailScreenProps> = ({ navigation, 
   const handleEdit = () => {
     if (navigation && memo) {
       navigation.navigate('MemoEdit', { memoId: memo.id });
+    }
+  };
+
+  const handleTimestampPress = (seconds: number, videoId?: string) => {
+    if (navigation && videoId) {
+      navigation.navigate('VideoPlayer', { videoId, initialTime: seconds });
     }
   };
 
@@ -224,9 +231,12 @@ export const MemoDetailScreen: React.FC<MemoDetailScreenProps> = ({ navigation, 
             </View>
           </View>
 
-          <Text style={styles.memoContent}>
-            {memo.content}
-          </Text>
+          <TimestampText
+            content={memo.content}
+            videoId={memo.video_id}
+            onTimestampPress={handleTimestampPress}
+            style={styles.memoContent}
+          />
 
           {memo.tags && memo.tags.length > 0 && (
             <View style={styles.tagsContainer}>

@@ -176,8 +176,8 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   const { width: playerWidth, height: playerHeight } = calculatePlayerDimensions();
   const playerId = `youtube-player-${extractVideoId(videoId)}-${Date.now()}`;
 
-  // Only log errors for invalid dimensions
-  if (__DEV__ && (!playerWidth || !playerHeight)) {
+  // Log errors for invalid dimensions
+  if (!playerWidth || !playerHeight) {
     console.error('[YouTubePlayer] Invalid dimensions:', playerWidth, playerHeight);
   }
 
@@ -212,9 +212,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
       }
 
       window.onYouTubeIframeAPIReady = () => {
-        if (__DEV__) {
-          console.log('[YouTubePlayer] Web YouTube API loaded');
-        }
         setIsWebApiLoaded(true);
       };
     };
@@ -228,13 +225,6 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
     if (!isWebApiLoaded || !videoId || webPlayer) return;
 
     const cleanVideoId = extractVideoId(videoId);
-    if (__DEV__) {
-      console.log('[YouTubePlayer] Web initializing player:', {
-        videoId: cleanVideoId,
-        playerId,
-        autoplay
-      });
-    }
 
     const player = new window.YT.Player(playerId, {
       height: playerHeight,
@@ -250,9 +240,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
       },
       events: {
         onReady: (event) => {
-          if (__DEV__) {
-            console.log('[YouTubePlayer] Web player ready');
-          }
+          console.log('[YouTubePlayer] Web player ready');
           setWebPlayer(event.target);
           setIsReady(true);
           onReady?.();
@@ -283,9 +271,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                     webTimeUpdateInterval.current = setInterval(() => startTimeUpdate(), 2000); // 2s when paused
                   }
                 } catch (error) {
-                  if (__DEV__) {
-                    console.error('[YouTubePlayer] Web timeUpdate error:', error);
-                  }
+                  console.error('[YouTubePlayer] Web timeUpdate error:', error);
                 }
               }
             }, 200); // 200ms for smoother updates
@@ -479,7 +465,28 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
             window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: 'ready'
             }));
-            
+
+            // Apply initial time if specified
+            if (${initialTime} > 0) {
+                setTimeout(() => {
+                    if (player && isPlayerReady) {
+                        player.seekTo(${initialTime});
+
+                        // For iOS, ensure video starts playing after seek
+                        if ('${Platform.OS}' === 'ios') {
+                            setTimeout(() => {
+                                if (player && isPlayerReady) {
+                                    const state = player.getPlayerState();
+                                    if (state !== YT.PlayerState.PLAYING) {
+                                        player.playVideo();
+                                    }
+                                }
+                            }, 500);
+                        }
+                    }
+                }, 500);
+            }
+
             // Smart time update with state-based intervals
             let lastTime = -1;
             window.timeUpdateInterval = null;
@@ -526,7 +533,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         
         function onPlayerStateChange(event) {
             let state = 'unknown';
-            
+
             switch (event.data) {
                 case YT.PlayerState.PLAYING:
                     state = 'playing';
@@ -547,8 +554,14 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                         window.timeUpdateInterval = null;
                     }
                     break;
+                case YT.PlayerState.BUFFERING:
+                    state = 'buffering';
+                    break;
+                case YT.PlayerState.CUED:
+                    state = 'cued';
+                    break;
             }
-            
+
             window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: 'stateChange',
                 state: state
@@ -602,7 +615,25 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
                     player.pauseVideo();
                     break;
                 case 'seekTo':
-                    player.seekTo(data.time);
+                    try {
+                        player.seekTo(data.time);
+
+                        // For iOS, also try to play after seeking to ensure video starts
+                        setTimeout(() => {
+                            if (player && isPlayerReady) {
+                                const state = player.getPlayerState();
+
+                                // If player is paused/cued after seek on iOS, try to play
+                                if ('${Platform.OS}' === 'ios' && (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED)) {
+                                    player.playVideo();
+                                }
+                            }
+                        }, 500);
+
+                    } catch (error) {
+                        console.error('[YouTubePlayer] seekTo error:', error);
+                    }
+
                     // Immediately trigger time update after seeking
                     if (window.timeUpdateInterval) {
                         clearTimeout(window.timeUpdateInterval);
@@ -634,9 +665,9 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
     try {
       const data = JSON.parse(event.nativeEvent.data);
       
-      // Log only important messages, skip timeUpdate spam
-      if (__DEV__ && data.type !== 'timeUpdate') {
-        console.log('[YouTubePlayer]', data.type, ':', videoId, data.state || data.error || '');
+      // Log important messages only
+      if (data.type !== 'timeUpdate') {
+        console.log('[YouTubePlayer]', data.type, ':', data.state || data.error || '');
       }
       
       switch (data.type) {
@@ -660,15 +691,11 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         case 'error':
           const youtubeError = getYouTubeError(data.errorCode || 0);
           
-          if (__DEV__) {
-            console.error('[YouTubePlayer] Video playback error:', {
-              videoId,
-              errorCode: data.errorCode,
-              errorMessage: data.error,
-              youtubeError,
-              platform: Platform.OS
-            });
-          }
+          console.error('[YouTubePlayer] Video playback error:', {
+            errorCode: data.errorCode,
+            errorMessage: data.error,
+            platform: Platform.OS
+          });
           
           onError?.(youtubeError.message, data.errorCode);
           
@@ -695,19 +722,16 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
           break;
       }
     } catch (error) {
-      if (__DEV__) {
-        console.error('[YouTubePlayer] Error parsing WebView message:', error);
-      }
-      console.error('Error parsing WebView message:', error);
+      console.error('[YouTubePlayer] Error parsing WebView message:', error);
     }
   };
 
   const sendMessage = (message: any) => {
-    if (webViewRef.current && isReady) {
+    if (webViewRef.current) {
       try {
         // Primary method: postMessage
         webViewRef.current.postMessage(JSON.stringify(message));
-        
+
         // Alternative method: injectedJavaScript for immediate execution
         const jsCode = `
           try {
@@ -721,9 +745,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         `;
         webViewRef.current.injectJavaScript(jsCode);
       } catch (error) {
-        if (__DEV__) {
-          console.error('[YouTubePlayer] Error sending message:', error);
-        }
+        console.error('[YouTubePlayer] Error sending message:', error);
       }
     }
   };
@@ -731,7 +753,9 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   // Public methods
   const play = () => sendMessage({ type: 'play' });
   const pause = () => sendMessage({ type: 'pause' });
-  const seekTo = (time: number) => sendMessage({ type: 'seekTo', time });
+  const seekTo = (time: number) => {
+    sendMessage({ type: 'seekTo', time });
+  };
   const getCurrentTime = () => sendMessage({ type: 'getCurrentTime' });
 
   // Expose methods via ref - unified for both platforms
@@ -740,25 +764,16 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
       return {
         play: () => {
           if (webPlayer && typeof webPlayer.playVideo === 'function') {
-            if (__DEV__) {
-              console.log('[YouTubePlayer] Web play()');
-            }
             webPlayer.playVideo();
           }
         },
         pause: () => {
           if (webPlayer && typeof webPlayer.pauseVideo === 'function') {
-            if (__DEV__) {
-              console.log('[YouTubePlayer] Web pause()');
-            }
             webPlayer.pauseVideo();
           }
         },
         seekTo: (time: number) => {
           if (webPlayer && typeof webPlayer.seekTo === 'function') {
-            if (__DEV__) {
-              console.log('[YouTubePlayer] Web seekTo:', time);
-            }
             webPlayer.seekTo(time, true);
           }
         },
@@ -783,8 +798,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   if (Platform.OS === 'web') {
     const cleanVideoId = extractVideoId(videoId);
 
-    if (__DEV__ && lastLoggedVideoIdRef.current !== videoId) {
-      console.log('[YouTubePlayer] Web YouTube IFrame API:', cleanVideoId, `${playerWidth}x${playerHeight}`);
+    if (lastLoggedVideoIdRef.current !== videoId) {
       lastLoggedVideoIdRef.current = videoId;
     }
 
@@ -810,9 +824,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
   }
 
   // Mobile implementation using WebView
-  // Minimal mobile logging - only log once per video
-  if (__DEV__ && lastLoggedMobileVideoRef.current !== videoId) {
-    console.log('[YouTubePlayer] Mobile WebView:', videoId, `${playerWidth}x${playerHeight}`);
+  if (lastLoggedMobileVideoRef.current !== videoId) {
     lastLoggedMobileVideoRef.current = videoId;
   }
   
@@ -856,10 +868,7 @@ export const YouTubePlayer = React.forwardRef<any, YouTubePlayerProps>(({
         `}
         onError={(syntheticEvent) => {
           const { nativeEvent } = syntheticEvent;
-          if (__DEV__) {
-            console.error('[YouTubePlayer] WebView error for video:', videoId, nativeEvent);
-          }
-          console.error('WebView error: ', nativeEvent);
+          console.error('[YouTubePlayer] WebView error:', nativeEvent);
           onError?.('WebView failed to load');
         }}
         onLoadStart={() => {
